@@ -1,0 +1,13 @@
+{
+  "id": "P4",
+  "name": "Bad year",
+  "seed": 1,
+  "question": "How deep does cash go?",
+  "overrides": {
+    "demand": {
+      "shockFromMonth": 4,
+      "shockArrivalsMult": 0.5,
+      "shockChurnMult": 2
+    }
+  }
+}

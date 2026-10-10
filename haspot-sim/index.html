@@ -1,0 +1,1943 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haspot Sim</title>
+<style>
+:root {
+  --ink: #14231F; --ink-2: #2B3D38; --paper: #F6F1E7; --paper-2: #ECE4D4; --paper-3: #E1D6C1;
+  --marigold: #E9A23B; --marigold-ink: #8A5A0B; --terracotta: #B5523B; --green: #2F7D4F; --amber: #C98A12;
+  --muted: #5B6863; --line: #CDBFA6; --pharmacy: #2E7D6B; --kirana: #8C6A33; --inst: #4A5A8C;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); }
+body { display: flex; flex-direction: column; min-width: 1024px; font-size: 13px; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--ink); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+button.primary:hover:not(:disabled) { background: var(--ink-2); }
+button.accent { background: var(--marigold); border-color: var(--marigold); color: var(--ink); font-weight: 600; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--marigold); outline-offset: 1px; }
+input[type=number], input[type=text], select { background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
+input[type=number] { width: 110px; }
+
+header { background: var(--ink); color: var(--paper); padding: 6px 12px 6px; display: flex; flex-direction: column; gap: 5px; }
+.toprow { display: flex; align-items: center; gap: 14px; }
+.brand { font-weight: 700; letter-spacing: .3px; font-size: 15px; white-space: nowrap; }
+.brand span { color: var(--marigold); }
+.hud { display: flex; gap: 2px; flex: 1; flex-wrap: wrap; }
+.metric { padding: 2px 9px; border-left: 1px solid #33473F; min-width: 0; }
+.metric:first-child { border-left: 0; }
+.metric .k { font-size: 10.5px; color: #B9C3BD; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+.metric .v { font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.metric .v.neg { color: #F08A70; }
+.metric .v.pos { color: #9BD7AE; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
+.toolbar button { background: transparent; color: var(--paper); border-color: #3D534A; padding: 3px 9px; }
+.toolbar button:hover { border-color: var(--marigold); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; min-height: 20px; align-items: center; }
+.chip { font-size: 11.5px; border-radius: 999px; padding: 2px 9px; background: #23372F; color: var(--paper); border: 1px solid #3D534A; }
+.chip.gate { background: var(--marigold); color: var(--ink); border-color: var(--marigold); font-weight: 600; }
+.chip.warn { background: var(--terracotta); color: #fff; border-color: var(--terracotta); }
+.chip.muted { background: transparent; color: #B9C3BD; border-color: transparent; padding-left: 0; }
+
+main { flex: 1; display: flex; min-height: 0; }
+#mapwrap { flex: 1; position: relative; min-width: 0; background: var(--paper-2); overflow: hidden; }
+#map { display: block; width: 100%; height: 100%; cursor: grab; }
+#map.dragging { cursor: grabbing; }
+.overlay { position: absolute; background: rgba(20,35,31,.92); color: var(--paper); border-radius: 8px; padding: 7px 11px; }
+#timebox { top: 10px; left: 10px; min-width: 190px; }
+#timebox .t { font-size: 17px; font-weight: 700; }
+#timebox .sub { font-size: 11.5px; color: #B9C3BD; }
+.bar { height: 4px; background: #33473F; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.bar > div { height: 100%; width: 0; background: var(--marigold); }
+#speedbox { top: 10px; right: 10px; display: flex; gap: 4px; align-items: center; padding: 5px; }
+#speedbox button { background: transparent; color: var(--paper); border-color: #3D534A; padding: 3px 8px; }
+#speedbox button.on { background: var(--marigold); color: var(--ink); border-color: var(--marigold); font-weight: 700; }
+#legend { bottom: 10px; left: 10px; font-size: 11.5px; display: flex; gap: 10px; flex-wrap: wrap; max-width: calc(100% - 20px); }
+#legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+#tip { pointer-events: none; display: none; font-size: 12px; max-width: 240px; }
+#hint { bottom: 44px; left: 10px; font-size: 12px; background: var(--marigold); color: var(--ink); display: none; }
+
+aside { width: 350px; border-left: 1px solid var(--line); background: var(--paper); overflow-y: auto; display: flex; flex-direction: column; }
+section.panel { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+section.panel h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.empty { color: var(--muted); font-style: italic; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0; }
+.kv div:nth-child(odd) { color: var(--muted); }
+.kv div:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.row { display: flex; gap: 8px; align-items: center; margin: 4px 0; flex-wrap: wrap; }
+.row label { color: var(--muted); }
+.title { font-size: 15px; font-weight: 700; }
+.tag { display: inline-block; font-size: 11px; border-radius: 4px; padding: 1px 6px; background: var(--paper-3); margin-left: 4px; vertical-align: 1px; }
+.tag.live { background: #D5EBDD; color: #1E5534; }
+.tag.dark { background: #F6E3B8; color: #6E4B00; }
+.tag.failed { background: #F2D3CB; color: #7A2A17; }
+.msg { margin-top: 6px; font-size: 12px; padding: 5px 8px; border-radius: 5px; background: var(--paper-2); }
+.msg.bad { background: #F2D3CB; color: #6B2414; }
+.msg.good { background: #D5EBDD; color: #1E5534; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { padding: 2px 8px; font-size: 12px; }
+.tabs button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.loop { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin: 8px 0 4px; }
+.loop div { height: 28px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.slot-host { background: var(--paper-3); color: var(--ink); }
+.slot-house { background: var(--ink-2); color: var(--paper); }
+.slot-sold { background: var(--green); color: #fff; }
+.slot-half { background: linear-gradient(90deg, var(--green) 50%, #fff 50%); color: var(--ink); border: 1px solid var(--green); }
+.slot-anchor { background: var(--marigold); color: var(--ink); }
+.slot-open { background: #fff; border: 1px dashed var(--line); color: var(--muted); }
+.loopkey { font-size: 11px; color: var(--muted); }
+ul.list { list-style: none; margin: 0; padding: 0; max-height: 190px; overflow-y: auto; }
+ul.list li { padding: 3px 0; border-bottom: 1px dotted var(--line); display: flex; justify-content: space-between; gap: 8px; }
+ul.list li span:last-child { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#log li { display: block; }
+#log li b { color: var(--muted); font-weight: 600; margin-right: 4px; }
+#log li.good { color: #1E5534; } #log li.bad { color: #7A2A17; } #log li.warn { color: #6E4B00; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(20,35,31,.55); display: none; align-items: flex-start; justify-content: center; z-index: 10; padding: 40px 16px; overflow-y: auto; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--paper); border-radius: 10px; width: min(760px, 100%); padding: 18px 20px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.modal.wide { width: min(1080px, 100%); }
+.modal h2 { margin: 0 0 4px; font-size: 19px; }
+.modal .lede { color: var(--muted); margin: 0 0 12px; }
+.modal .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+.field label { display: block; font-weight: 600; margin-bottom: 3px; }
+.field .note { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 12px; padding: 8px 12px 10px; }
+legend { font-weight: 700; padding: 0 4px; }
+.cfg-row { display: grid; grid-template-columns: 1fr 130px; gap: 8px; align-items: center; padding: 3px 0; border-bottom: 1px dotted var(--paper-3); }
+.cfg-row .lbl { font-size: 12.5px; }
+.cfg-row .lbl small { color: var(--muted); display: block; font-size: 11px; }
+.cfg-row input[type=number], .cfg-row select { width: 130px; }
+.assume { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; background: #F6E3B8; color: #6E4B00; border-radius: 3px; padding: 0 4px; margin-left: 5px; vertical-align: 1px; }
+.cfg-cols { columns: 2 340px; column-gap: 16px; }
+.cfg-cols fieldset { break-inside: avoid; }
+table.data { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 12px; }
+table.data th, table.data td { padding: 3px 6px; border-bottom: 1px solid var(--paper-3); text-align: right; white-space: nowrap; }
+table.data th:first-child, table.data td:first-child { text-align: left; }
+table.data th { background: var(--paper-2); position: sticky; top: 0; font-weight: 600; }
+table.data td.neg { color: var(--terracotta); }
+.tablewrap { max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+.presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.preset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; display: flex; flex-direction: column; gap: 4px; }
+.preset b { font-size: 13.5px; }
+.preset span { color: var(--muted); font-size: 12px; flex: 1; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { font-size: 11px; fill: var(--muted); }
+.legendrow { display: flex; gap: 14px; font-size: 12px; margin: 4px 0; flex-wrap: wrap; }
+.legendrow i { display: inline-block; width: 14px; height: 3px; vertical-align: 3px; margin-right: 5px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+.stat { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stat .k { color: var(--muted); font-size: 11.5px; }
+.stat .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kbd { font-family: ui-monospace, monospace; background: var(--paper-2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+@media (max-width: 1180px) { aside { width: 300px; } .metric { padding: 2px 6px; } .metric .v { font-size: 13px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="toprow">
+    <div class="brand">Haspot <span>Sim</span></div>
+    <div class="hud" id="hud"></div>
+  </div>
+  <div class="toprow">
+    <div class="toolbar">
+      <button data-act="new" title="New game">New game</button>
+      <button data-act="scenarios">Scenarios</button>
+      <button data-act="config" title="Config (C)">Config</button>
+      <button data-act="ledger">Ledger &amp; charts</button>
+      <button data-act="mc">Monte Carlo</button>
+      <button data-act="compare">Compare</button>
+      <button data-act="save">Save</button>
+      <button data-act="load">Load</button>
+      <button data-act="help">Help</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+</header>
+<main>
+  <div id="mapwrap">
+    <canvas id="map" aria-label="City map. Click a building to select it."></canvas>
+    <div class="overlay" id="timebox"><div class="t" id="tmonth">Month 0</div><div class="sub" id="tsub"></div><div class="bar"><div id="tbar"></div></div></div>
+    <div class="overlay" id="speedbox">
+      <button data-speed="0" title="Pause (Space)">❚❚</button>
+      <button data-speed="1" title="Real time: 1 minute = 1 month (1)">1×</button>
+      <button data-speed="2" title="1 month every 5 s (2)">5 s</button>
+      <button data-speed="3" title="1 month every second (3)">1 s</button>
+      <button data-speed="4" title="Jump to month N (4)">⇥ N</button>
+      <button id="nextbtn" title="Next month (N)">+1</button>
+    </div>
+    <div class="overlay" id="legend">
+      <span><i style="background:var(--pharmacy)"></i>Pharmacy</span>
+      <span><i style="background:var(--kirana)"></i>Kirana</span>
+      <span><i style="background:var(--inst)"></i>Hospital / school / coaching / lab</span>
+      <span><i style="background:#fff;border:2px solid var(--green)"></i>Screen live</span>
+      <span><i style="background:#fff;border:2px solid var(--amber)"></i>Dark days</span>
+      <span><i style="background:#fff;border:2px solid var(--terracotta)"></i>Failed</span>
+      <span><i style="background:var(--marigold);border-radius:50%"></i>Hub</span>
+    </div>
+    <div class="overlay" id="hint"></div>
+    <div class="overlay" id="tip"></div>
+  </div>
+  <aside>
+    <section class="panel" id="selpanel"></section>
+    <section class="panel" id="netpanel"></section>
+    <section class="panel"><h3>Advertisers <span id="advcount"></span></h3><ul class="list" id="advlist"></ul></section>
+    <section class="panel" style="flex:1"><h3>Event log</h3><ul class="list" id="log" style="max-height:none"></ul></section>
+  </aside>
+</main>
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<input type="file" id="filein" accept=".json,.csv,application/json,text/csv" hidden>
+<script id="engine">
+/* Haspot Sim engine: pure functions, no DOM. Tested by test/engine.test.mjs in node:vm. */
+var HaspotEngine = (function () {
+  'use strict';
+
+  // ---------- defaults (section 6) ----------
+  var DEFAULTS = {
+    mode: 'stochastic', // 'plan' | 'stochastic' | 'classic'
+    kit: { tv: 10000, hotspot: 2150, power: 700, fitting: 800 },
+    opex: { hostFee: 500, reserve: 300, licenceY1: 257, licenceY2: 147, data: 205, freeLicences: 2, hostPayFollowsUptime: true },
+    feeRate: 0.0353,
+    fixedBase: 5700,
+    hubPer15: 300,
+    start: {
+      money: 117800, creditLimit: 100000, creditInterestMonthly: 0.015,
+      setup: 'plan', // 'plan' = 10 pharmacy screens + 5 founders + spares + trip; 'empty' = nothing installed
+      setupScreens: 10, setupFounders: 5, spareTVs: 1, spareHotspots: 2, tripCost: 12000,
+      calendarStart: '2026-10'
+    },
+    growth: {
+      salaryTopup: 40000, topupMonths: 12,
+      expandWhenSold: 7, batch: 10, maxPerNetwork: 21, kiranaLaunchWhenPharmacyScreens: 20,
+      autoExpand: true, preferZone: ''
+    },
+    hostPitch: { success: 0.40, hostSlotBonus: 0.10, cooldownMonths: 2 },
+    loop: { slots: 12, sellable: 10, openHours: 12 },
+    price: { list: 500, founding: 300, foundingMonths: 12, foundingPrepaidMonths: 3, halfSlot: 250, foundingCount: 5, byNetwork: { ph: 0, ki: 0 } }, // byNetwork: 0 = use list
+    demand: {
+      arrivalsPerNetwork: 1.0, elasticity: 1.5, networkSizeBoost: 0.0,
+      churnMonthly: 0.05, churnNoReports: 0.10, reports: true, makeGood: true,
+      halfShare: 0.0,       // share of arrivals that buy a half slot
+      targetSold: 0,        // 0 = no cap beyond open slots; plan mode uses 8
+      fixedArrivals: -1,    // -1 = Poisson; >= 0 = exactly this many per live network per month
+      shockFromMonth: 0, shockArrivalsMult: 1, shockChurnMult: 1
+    },
+    anchors: {
+      enabled: false, slotsPerNetwork: 5, price: 450, termMonths: 12, billing: 'quarterly',
+      annualDiscount: 0.10, maxSlotsPerClient: 2, pitchSuccess: 0.25, exclusivityBonus: 0.10,
+      renewProb: 0.70, seasonalWeighting: true, peakMonths: [1, 2, 3, 4], feeRate: 0, tdsRate: 0.02,
+      autoPitchPerMonth: 1, cooldownMonths: 2
+    },
+    events: {
+      tvFailMonthly: 0.010, hotspotFailMonthly: 0.020, unplugMonthly: 0.10, powerCutDaysMonthly: 3,
+      restartFailProb: 0.0, hostQuitMonthly: 0.01, adRuleBreach: 0.002,
+      spareSwapDays: 2, noSpareSwapDays: 10, restartDarkDays: 2
+    },
+    infra: {
+      player: 'androidTV', connectivity: 'own4G', cms: 'cloud', cmsSwitchMonth: 13,
+      piExtra: 7091, vpsMonthly: 600, selfHostedNeedsLicence: false, shopWifiHostFeeExtra: 100, sharedRange: 3
+    },
+    founder: {
+      approveAd: 2, swap: 60, closeBase: 60, closePerScreen: 1, appsScript: false,
+      weeklyReview: 30, anchorAccount: 20, pitch: 30, selfHostedExtra: 60, breach: 30
+    },
+    classic: { revenuePerScreen: 7000, expensePerScreen: 5000 }
+  };
+
+  var LEDGER_COLUMNS = ['month', 'screens_ph', 'screens_ki', 'slots_sold_ph', 'slots_sold_ki', 'revenue', 'gateway_fees',
+    'host_fees', 'reserve', 'licences', 'data', 'fixed', 'interest', 'profit', 'cash', 'credit_used', 'uptime_pct',
+    'founder_hours_week', 'anchors_active', 'monthly_advertisers'];
+
+  var ZONES = [
+    { id: 'lanka', name: 'Lanka (BHU gate)', footfall: 1.3, power: 1.0, x: 0, y: 0, w: 16, h: 14 },
+    { id: 'sigra', name: 'Sigra', footfall: 1.2, power: 1.0, x: 16, y: 0, w: 16, h: 14 },
+    { id: 'godowlia', name: 'Godowlia', footfall: 1.4, power: 1.6, x: 32, y: 0, w: 16, h: 14 },
+    { id: 'cantt', name: 'Cantt', footfall: 1.0, power: 0.8, x: 0, y: 14, w: 24, h: 14 },
+    { id: 'bhelupur', name: 'Bhelupur', footfall: 1.1, power: 1.0, x: 24, y: 14, w: 24, h: 14 }
+  ];
+  var GRID = { w: 48, h: 28, tile: 24 };
+  var NETWORKS = ['ph', 'ki'];
+  var NETWORK_NAMES = { ph: 'Pharmacy', ki: 'Kirana' };
+  var INSTITUTION_TYPES = ['hospital', 'school', 'coaching', 'lab'];
+  var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // ---------- presets (section 8) ----------
+  var PRESETS = [
+    { id: 'P0', name: 'Classic', seed: 1, question: 'The original toy rules',
+      overrides: { mode: 'classic', start: { money: 100000, creditLimit: 50000, setup: 'empty' }, growth: { salaryTopup: 0, autoExpand: false } } },
+    { id: 'P1', name: 'Plan, deterministic', seed: 1, question: 'Reproduces the business plan exactly',
+      overrides: { mode: 'plan', start: { money: 0 } } },
+    { id: 'P2', name: 'Base', seed: 1, question: 'What a normal launch looks like', overrides: {} },
+    { id: 'P3', name: 'Anchor-led', seed: 1, question: 'Is the floor worth the lower top line?',
+      overrides: { anchors: { enabled: true, slotsPerNetwork: 5, price: 450, billing: 'quarterly' } } },
+    { id: 'P4', name: 'Bad year', seed: 1, question: 'How deep does cash go?',
+      overrides: { demand: { shockFromMonth: 4, shockArrivalsMult: 0.5, shockChurnMult: 2 } } },
+    { id: 'P5', name: 'Infra stress', seed: 1, question: 'What untested hardware costs',
+      overrides: { growth: { preferZone: 'godowlia' }, events: { restartFailProb: 0.3, hotspotFailMonthly: 0.04 } } },
+    { id: 'P6', name: 'Lean infra', seed: 1, question: 'Do the savings beat the extra downtime and hours?',
+      overrides: { infra: { connectivity: 'shopWifi', cms: 'selfHosted', cmsSwitchMonth: 13 } } },
+    { id: 'P7', name: 'Fast sales', seed: 1, question: 'Upside case', overrides: { demand: { arrivalsPerNetwork: 2.0 } } },
+    { id: 'P8', name: 'No top-ups', seed: 1, question: 'Growth funded only by the business', overrides: { growth: { salaryTopup: 0 } } }
+  ];
+
+  // ---------- small utils ----------
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function isObj(v) { return v && typeof v === 'object' && !Array.isArray(v); }
+  function merge(base, over) {
+    var out = clone(base);
+    (function rec(t, s) {
+      for (var k in s) {
+        if (isObj(s[k]) && isObj(t[k])) rec(t[k], s[k]);
+        else t[k] = clone(s[k]);
+      }
+    })(out, over || {});
+    return out;
+  }
+  function makeParams(overrides) { return merge(DEFAULTS, overrides || {}); }
+  function presetById(id) { for (var i = 0; i < PRESETS.length; i++) if (PRESETS[i].id === id) return PRESETS[i]; return null; }
+  function presetParams(id) { var p = presetById(id); return makeParams(p ? p.overrides : {}); }
+  function round(x) { return Math.round(x); }
+  function round2(x) { return Math.round(x * 100) / 100; }
+  function fmtINR(x) { var n = Math.round(x); return (n < 0 ? '−₹' : '₹') + Math.abs(n).toLocaleString('en-IN'); }
+
+  // Plan mode (section 9.1) switches off every event and random draw.
+  function effective(p) {
+    if (p.mode !== 'plan') return p;
+    var e = clone(p);
+    for (var k in e.events) if (/Monthly$|Prob$|Breach$/.test(k)) e.events[k] = 0;
+    e.demand.fixedArrivals = e.demand.fixedArrivals >= 0 ? e.demand.fixedArrivals : 1;
+    e.demand.targetSold = 8;
+    e.demand.churnMonthly = 0; e.demand.churnNoReports = 0; e.demand.halfShare = 0;
+    e.demand.shockFromMonth = 0;
+    e.opex.licenceY2 = e.opex.licenceY1;
+    e.opex.freeLicences = 0;
+    e.start.creditLimit = 1e15;
+    e.start.creditInterestMonthly = 0;
+    e.growth.autoExpand = true;
+    e.anchors.enabled = false;
+    return e;
+  }
+
+  // ---------- RNG: mulberry32, state kept in a plain object so state is JSON-serialisable ----------
+  function rngNext(holder) {
+    var t = (holder.rngState = (holder.rngState + 0x6D2B79F5) | 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function rngInt(h, lo, hi) { return lo + Math.floor(rngNext(h) * (hi - lo + 1)); }
+  function rngRange(h, lo, hi) { return lo + rngNext(h) * (hi - lo); }
+  function poisson(h, lambda) {
+    if (lambda <= 0) return 0;
+    var L = Math.exp(-lambda), k = 0, q = 1;
+    do { k++; q *= rngNext(h); } while (q > L && k < 1000);
+    return k - 1;
+  }
+  function shuffle(h, a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rngNext(h) * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+
+  // ---------- money helpers ----------
+  function kitCost(p, player) {
+    return p.kit.tv + p.kit.hotspot + p.kit.power + p.kit.fitting + (player === 'pi' ? p.infra.piExtra : 0);
+  }
+  function listPrice(p, net) { return (p.price.byNetwork && p.price.byNetwork[net] > 0) ? p.price.byNetwork[net] : p.price.list; }
+  function opexPerScreen(p) { return p.opex.hostFee + p.opex.reserve + p.opex.licenceY1 + p.opex.data; }
+  function fixedCost(p, n) {
+    if (p.mode === 'classic') return 0;
+    return p.fixedBase + p.hubPer15 * Math.ceil(Math.max(n, 1) / 15);
+  }
+  function perScreenMargin(p, slots) { return slots * p.price.list * (1 - p.feeRate) - opexPerScreen(p); }
+  function screensFor(p, target, slots) {
+    var m = perScreenMargin(p, slots);
+    if (m <= 0) return Infinity;
+    for (var n = 1; n < 100000; n++) if (n * m - fixedCost(p, n) >= target) return n;
+    return Infinity;
+  }
+  function paybackMonths(p, slots) { return kitCost(p, p.infra.player) / perScreenMargin(p, slots); }
+  // Steady-state monthly net with n screens (9.2), no events.
+  function steadyNet(p, n, openSold, anchorSlots) {
+    return openSold * p.price.list * n * (1 - p.feeRate) + (anchorSlots || 0) * p.anchors.price * n * (1 - p.anchors.feeRate)
+      - n * opexPerScreen(p) - fixedCost(p, n);
+  }
+  function calendarLabel(p, month) {
+    var parts = String(p.start.calendarStart || '2026-10').split('-');
+    var y = +parts[0], m0 = +parts[1] - 1 + Math.max(month, 1) - 1;
+    return MONTH_NAMES[m0 % 12] + ' ' + (y + Math.floor(m0 / 12));
+  }
+  function calendarMonth(p, month) { // 1..12
+    var parts = String(p.start.calendarStart || '2026-10').split('-');
+    return ((+parts[1] - 1 + month - 1) % 12) + 1;
+  }
+
+  // ---------- world (section 5) ----------
+  var PH_NAMES = ['Shiv', 'Ganga', 'Kashi', 'Sai', 'Jai Ambe', 'Om', 'Shree Ram', 'Vishwanath', 'Annapurna', 'Sankat Mochan', 'Durga', 'Mahavir', 'Sanjeevani', 'Apollo', 'Life Care', 'New'];
+  var KI_NAMES = ['Gupta', 'Agrawal', 'Jaiswal', 'Yadav', 'Maurya', 'Kesari', 'Pandey', 'Sahu', 'Mishra', 'Verma', 'Tiwari', 'Singh', 'Chaurasia', 'Bansal', 'Pathak', 'Rai'];
+  var INST_NAMES = {
+    hospital: ['City Hospital', 'Heritage Hospital', 'Sun Hospital', 'Ganga Care', 'Aastha Hospital'],
+    school: ['Sunbeam School', 'St. Mary\'s', 'DPS Branch', 'Saraswati Vidya', 'Little Flower'],
+    coaching: ['Pathfinder Classes', 'Aakash Point', 'Toppers Academy', 'Vidya Coaching', 'Career Plus'],
+    lab: ['Path Lab', 'Diagnostics Hub', 'Pathkind Centre', 'City Labs', 'Scan Point']
+  };
+
+  function roadsFor(h, from, to) {
+    var lines = [], x = from + rngInt(h, 2, 4);
+    while (x < to - 1) { lines.push(x); x += rngInt(h, 6, 8); }
+    return lines;
+  }
+
+  function createWorld(worldSeed) {
+    var h = { rngState: (worldSeed | 0) ^ 0x5bd1e995 };
+    var road = [];
+    for (var y = 0; y < GRID.h; y++) { road.push([]); for (var x = 0; x < GRID.w; x++) road[y].push(0); }
+    var vx = roadsFor(h, 0, GRID.w), hy = roadsFor(h, 0, GRID.h);
+    vx.forEach(function (c) { for (var y = 0; y < GRID.h; y++) road[y][c] = 1; });
+    hy.forEach(function (r) { for (var x = 0; x < GRID.w; x++) road[r][x] = 1; });
+    var occ = road.map(function (row) { return row.slice(); });
+    var shops = [], institutions = [], nid = 1;
+    function zoneAt(x, y) { for (var i = 0; i < ZONES.length; i++) { var z = ZONES[i]; if (x >= z.x && x < z.x + z.w && y >= z.y && y < z.y + z.h) return z; } return ZONES[0]; }
+    function nearRoad(x, y, w, hh) {
+      for (var yy = y - 1; yy <= y + hh; yy++) for (var xx = x - 1; xx <= x + w; xx++) {
+        if (yy < 0 || xx < 0 || yy >= GRID.h || xx >= GRID.w) continue;
+        var inside = xx >= x && xx < x + w && yy >= y && yy < y + hh;
+        if (!inside && road[yy][xx]) return true;
+      }
+      return false;
+    }
+    function free(z, x, y, w, hh) {
+      if (x + w > z.x + z.w || y + hh > z.y + z.h) return false;
+      for (var yy = y; yy < y + hh; yy++) for (var xx = x; xx < x + w; xx++) if (occ[yy][xx]) return false;
+      return true;
+    }
+    function candidates(z, w, hh) {
+      var c = [];
+      for (var y = z.y; y < z.y + z.h; y++) for (var x = z.x; x < z.x + z.w; x++) if (free(z, x, y, w, hh) && nearRoad(x, y, w, hh)) c.push([x, y]);
+      return shuffle(h, c);
+    }
+    function place(z, w, hh) {
+      var c = candidates(z, w, hh);
+      for (var i = 0; i < c.length; i++) {
+        var x = c[i][0], y = c[i][1];
+        if (free(z, x, y, w, hh)) { for (var yy = y; yy < y + hh; yy++) for (var xx = x; xx < x + w; xx++) occ[yy][xx] = 2; return [x, y]; }
+      }
+      return null;
+    }
+    ZONES.forEach(function (z) {
+      INSTITUTION_TYPES.forEach(function (t) {
+        var n = rngInt(h, 1, 3);
+        for (var i = 0; i < n; i++) {
+          var pos = place(z, 2, 2); if (!pos) continue;
+          var names = INST_NAMES[t];
+          institutions.push({ id: 'i' + (nid++), kind: 'institution', type: t, category: t, zone: z.id, x: pos[0], y: pos[1], w: 2, h: 2,
+            name: names[rngInt(h, 0, names.length - 1)] + ', ' + z.name.split(' ')[0],
+            budgetMonthly: Math.round(rngRange(h, 10000, 60000) / 500) * 500, cooldownUntil: 0 });
+        }
+      });
+      [['pharmacy', 6, 10, 120, 260, PH_NAMES, ' Medical'], ['kirana', 10, 16, 180, 400, KI_NAMES, ' Kirana']].forEach(function (spec) {
+        var n = rngInt(h, spec[1], spec[2]);
+        for (var i = 0; i < n; i++) {
+          var pos = place(z, 1, 1); if (!pos) continue;
+          shops.push({ id: 's' + (nid++), kind: 'shop', type: spec[0], zone: z.id, x: pos[0], y: pos[1], w: 1, h: 1,
+            name: spec[5][rngInt(h, 0, spec[5].length - 1)] + spec[6],
+            footfall: Math.round(rngRange(h, spec[3], spec[4]) * z.footfall),
+            hasInverter: rngNext(h) < 0.5, wifiQuality: round2(rngNext(h)), hostReliability: round2(rngRange(h, 0.85, 0.98)),
+            state: 'prospect', cooldownUntil: 0, hostSlot: false });
+        }
+      });
+    });
+    return { grid: GRID, road: road, zones: ZONES, shops: shops, institutions: institutions };
+  }
+
+  // ---------- state ----------
+  function newGame(params, opts) {
+    opts = opts || {};
+    var p = clone(params);
+    var seed = opts.seed != null ? opts.seed : 1;
+    var worldSeed = opts.worldSeed != null ? opts.worldSeed : 7;
+    var world = opts.world ? clone(opts.world) : createWorld(worldSeed);
+    var s = {
+      version: 1, month: 0, seed: seed, worldSeed: worldSeed, rngState: (seed * 2654435761) | 0,
+      params: p, cash: 0, creditLimit: 0, reserveFund: 0, tdsReceivable: 0,
+      screens: [], shops: world.shops, institutions: world.institutions, road: world.road,
+      advertisers: [], spares: { tv: 0, hotspot: 0 }, hubShopId: null,
+      foundersSigned: 0, nextId: 1, pitchesThisMonth: 0, approvalsThisMonth: 0,
+      ledger: [], log: [], insolvent: null, notices: []
+    };
+    var e = effective(p);
+    s.creditLimit = e.start.creditLimit;
+    s.cash = e.start.money;
+    if (e.start.setup === 'plan') {
+      var hosts = pickHosts(s, e, 'pharmacy', e.start.setupScreens);
+      hosts.forEach(function (shop) { shop.state = 'host'; addScreen(s, e, shop, 0); s.cash -= kitCost(e, e.infra.player); });
+      if (hosts.length) s.hubShopId = hosts[0].id;
+      s.spares.tv = e.start.spareTVs; s.spares.hotspot = e.start.spareHotspots;
+      s.cash -= e.start.spareTVs * e.kit.tv + e.start.spareHotspots * e.kit.hotspot + e.start.tripCost;
+      if (e.mode !== 'classic') {
+        for (var i = 0; i < e.start.setupFounders; i++) {
+          var adv = signAdvertiser(s, e, 'ph', 'founding', 1, 1);
+          s.cash += adv.prepaidCash;
+        }
+      }
+    }
+    log(s, 'Game started: ' + (e.mode === 'plan' ? 'plan mode' : e.mode) + ', cash ' + fmtINR(s.cash) + ', credit limit ' + (s.creditLimit >= 1e14 ? 'unlimited' : fmtINR(s.creditLimit)) + '.');
+    return s;
+  }
+
+  function log(s, text, kind) { if (s.quiet) return; s.log.unshift({ month: s.month, text: text, kind: kind || 'info' }); if (s.log.length > 400) s.log.length = 400; }
+  function shopById(s, id) {
+    var idx = s._shopIdx;
+    if (!idx || idx.n !== s.shops.length || idx.ref !== s.shops) {
+      idx = { n: s.shops.length, ref: s.shops, map: {} };
+      for (var i = 0; i < s.shops.length; i++) idx.map[s.shops[i].id] = s.shops[i];
+      Object.defineProperty(s, '_shopIdx', { value: idx, writable: true, configurable: true, enumerable: false });
+    }
+    return idx.map[id] || null;
+  }
+  function instById(s, id) { for (var i = 0; i < s.institutions.length; i++) if (s.institutions[i].id === id) return s.institutions[i]; return null; }
+  function screenAt(s, shopId) { for (var i = 0; i < s.screens.length; i++) if (s.screens[i].shopId === shopId) return s.screens[i]; return null; }
+  function netOf(type) { return type === 'pharmacy' ? 'ph' : 'ki'; }
+  function zoneById(id) { for (var i = 0; i < ZONES.length; i++) if (ZONES[i].id === id) return ZONES[i]; return ZONES[0]; }
+
+  function pickHosts(s, p, type, n) {
+    var pref = p.growth.preferZone;
+    var c = s.shops.filter(function (sh) { return sh.type === type && (sh.state === 'prospect' || sh.state === 'host') && !screenAt(s, sh.id); });
+    c.sort(function (a, b) {
+      var pa = a.zone === pref ? 1 : 0, pb = b.zone === pref ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      var ha = a.state === 'host' ? 1 : 0, hb = b.state === 'host' ? 1 : 0;
+      if (ha !== hb) return hb - ha;
+      return b.footfall - a.footfall || (a.id < b.id ? -1 : 1);
+    });
+    return c.slice(0, n);
+  }
+
+  function addScreen(s, p, shop, month, infra) {
+    infra = infra || {};
+    var sc = { id: 'sc' + (s.nextId++), shopId: shop.id, network: netOf(shop.type), installedMonth: month,
+      player: infra.player || p.infra.player, connectivity: infra.connectivity || p.infra.connectivity,
+      status: 'live', darkDaysThisMonth: 0, uptimeShare: 1, x: shop.x, y: shop.y, zone: shop.zone, paired: false };
+    s.screens.push(sc);
+    return sc;
+  }
+
+  function activeScreens(s, net) {
+    return s.screens.filter(function (sc) { return sc.installedMonth < s.month && (!net || sc.network === net); });
+  }
+
+  // kind: 'founding' | 'list' | 'half'
+  function signAdvertiser(s, p, net, kind, startMonth, screensNow) {
+    var slots = kind === 'half' ? 0.5 : 1;
+    var adv = { id: 'a' + (s.nextId++), network: net, kind: kind, slots: slots, startMonth: startMonth,
+      endMonth: null, prepaidUntil: 0, lockedUntil: 0, rate: kind === 'half' ? p.price.halfSlot : listPrice(p, net),
+      category: ['clinic', 'coaching', 'retail', 'food', 'services'][s.nextId % 5], prepaidCash: 0 };
+    if (kind === 'founding') {
+      adv.rate = p.price.founding;
+      adv.lockedUntil = startMonth + p.price.foundingMonths - 1;
+      adv.prepaidUntil = startMonth + p.price.foundingPrepaidMonths - 1;
+      var n = net === 'ph' && s.month === 0 ? p.start.setupScreens : (screensNow || 0);
+      adv.prepaidCash = adv.rate * n * p.price.foundingPrepaidMonths;
+      s.foundersSigned++;
+    }
+    s.advertisers.push(adv);
+    s.approvalsThisMonth++;
+    return adv;
+  }
+
+  function advMonthlyRate(p, adv, month) {
+    if (adv.kind === 'founding' && month > adv.lockedUntil) return listPrice(p, adv.network) * adv.slots;
+    if (adv.kind === 'anchor') return adv.rate * adv.slots;
+    if (adv.kind === 'half') return adv.rate;
+    return adv.rate * adv.slots;
+  }
+
+  function soldSlots(s, net, includeAnchors) {
+    var t = 0;
+    s.advertisers.forEach(function (a) { if (a.network === net && (includeAnchors || a.kind !== 'anchor')) t += a.slots; });
+    return t;
+  }
+  function anchorSlotsUsed(s, net) {
+    var t = 0; s.advertisers.forEach(function (a) { if (a.network === net && a.kind === 'anchor') t += a.slots; }); return t;
+  }
+  function openCapacity(s, p) {
+    var cap = p.loop.sellable - (p.anchors.enabled ? p.anchors.slotsPerNetwork : 0);
+    if (p.demand.targetSold > 0) cap = Math.min(cap, p.demand.targetSold);
+    return cap;
+  }
+
+  // ---------- the monthly tick (section 7.2) ----------
+  function tick(s) {
+    if (s.insolvent) return null;
+    var p = effective(s.params);
+    var classic = p.mode === 'classic';
+    var cashBefore = s.cash;
+    s.month += 1;
+    var M = s.month;
+    var minutes = 0, swaps = 0, breaches = 0;
+    var topup = M <= p.growth.topupMonths ? p.growth.salaryTopup : 0;
+
+    // 1b. institutions/shops cooldowns
+    s.shops.forEach(function (sh) { if (sh.state === 'pitched' && sh.cooldownUntil <= M) sh.state = 'prospect'; });
+
+    // 2. events per active screen
+    var act = activeScreens(s);
+    var repairCost = 0;
+    var sparesUsed = { tv: 0, hotspot: 0 };
+    var swapDaysTV = function () {
+      if (s.hubShopId && s.spares.tv > 0) { s.spares.tv--; sparesUsed.tv++; return p.events.spareSwapDays; }
+      return p.events.noSpareSwapDays;
+    };
+    var quitters = [];
+    act.forEach(function (sc) {
+      var shop = shopById(s, sc.shopId);
+      var zone = zoneById(sc.zone);
+      var dark = 0;
+      sc.tvFailed = false;
+      // TV failure
+      if (rngNext(s) < p.events.tvFailMonthly) {
+        var hadSpare = s.hubShopId && s.spares.tv > 0;
+        dark += swapDaysTV();
+        repairCost += p.kit.tv; swaps++; sc.tvFailed = true;
+        log(s, 'TV failed at ' + shop.name + (hadSpare ? ' — spare from hub, dark ' + p.events.spareSwapDays + ' days.' : ' — no spare, dark ' + p.events.noSpareSwapDays + ' days.'), 'bad');
+      }
+      // Hotspot failure: ads keep playing from storage; costs a replacement unless on shop Wi-Fi
+      var hf = p.events.hotspotFailMonthly * (sc.connectivity === 'shopWifi' ? 3 : 1);
+      if (rngNext(s) < hf) {
+        if (sc.connectivity !== 'shopWifi') {
+          if (s.hubShopId && s.spares.hotspot > 0) { s.spares.hotspot--; sparesUsed.hotspot++; }
+          repairCost += p.kit.hotspot;
+        }
+        log(s, (sc.connectivity === 'shopWifi' ? 'Shop Wi-Fi down' : 'Hotspot failed') + ' at ' + shop.name + ' — no monitoring for a few days, ads keep playing.', 'warn');
+      }
+      // Host unplugs
+      var relMult = shop ? (1 - shop.hostReliability) / 0.085 : 1;
+      var up = p.events.unplugMonthly * relMult * (p.opex.hostPayFollowsUptime ? 0.5 : 1);
+      var u = rngNext(s), ud = rngInt(s, 1, 3);
+      if (u < up) dark += ud;
+      // Power cuts: only cause dark days if the player fails to restart
+      var cuts = poisson(s, p.events.powerCutDaysMonthly * zone.power);
+      var rf = sc.player === 'pi' ? 0 : p.events.restartFailProb;
+      var restartFails = 0;
+      for (var c = 0; c < cuts; c++) if (rngNext(s) < rf && !(shop && shop.hasInverter)) restartFails++;
+      if (restartFails) { dark += restartFails * p.events.restartDarkDays; if (p.events.restartDarkDays > 1) swaps += restartFails; }
+      // Host quits
+      if (rngNext(s) < p.events.hostQuitMonthly) { dark += 1; swaps++; quitters.push(sc); }
+      sc.darkDaysThisMonth = Math.min(30, dark);
+      sc.uptimeShare = 1 - sc.darkDaysThisMonth / 30;
+      sc.status = sc.tvFailed && dark >= p.events.noSpareSwapDays ? 'failed' : (dark > 0 ? 'dark' : 'live');
+    });
+    quitters.forEach(function (sc) { moveScreen(s, p, sc); });
+
+    // shared hotspot pairing
+    var shared = act.filter(function (sc) { return sc.connectivity === 'sharedHotspot'; });
+    shared.forEach(function (sc) { sc.paired = false; });
+    for (var i = 0; i < shared.length; i++) {
+      if (shared[i].paired) continue;
+      for (var j = i + 1; j < shared.length; j++) {
+        if (!shared[j].paired && Math.max(Math.abs(shared[i].x - shared[j].x), Math.abs(shared[i].y - shared[j].y)) <= p.infra.sharedRange) {
+          shared[i].paired = shared[j].paired = true; break;
+        }
+      }
+    }
+
+    // 3. demand on open slots
+    var shock = p.demand.shockFromMonth > 0 && M >= p.demand.shockFromMonth;
+    var churnP = (p.demand.reports ? p.demand.churnMonthly : p.demand.churnNoReports) * (shock ? p.demand.shockChurnMult : 1);
+    var newAdvertisers = 0;
+    if (!classic) {
+      s.advertisers = s.advertisers.filter(function (a) {
+        if (a.kind === 'anchor') return true;
+        if (a.kind === 'founding' && M <= a.lockedUntil) return true;
+        if (rngNext(s) < churnP) { log(s, NETWORK_NAMES[a.network] + ': a ' + a.kind + ' advertiser (' + a.category + ') left.', 'warn'); return false; }
+        return true;
+      });
+      NETWORKS.forEach(function (net) {
+        var nScreens = activeScreens(s, net).length;
+        var draw = rngNext(s); // consumed even when not used, keeps streams aligned
+        if (!nScreens) return;
+        var lambda = p.demand.arrivalsPerNetwork * Math.pow(500 / listPrice(p, net), p.demand.elasticity) * (1 + p.demand.networkSizeBoost * nScreens / 10) * (shock ? p.demand.shockArrivalsMult : 1);
+        var arrivals = p.demand.fixedArrivals >= 0 ? p.demand.fixedArrivals : poisson(s, lambda);
+        var cap = openCapacity(s, p);
+        for (var k = 0; k < arrivals; k++) {
+          var free = cap - soldSlots(s, net, false);
+          var half = draw < p.demand.halfShare;
+          var need = half ? 0.5 : 1;
+          if (free < need) break;
+          var kind = s.foundersSigned < p.price.foundingCount ? 'founding' : (half ? 'half' : 'list');
+          var adv = signAdvertiser(s, p, net, kind, M, nScreens);
+          s.cash += adv.prepaidCash;
+          newAdvertisers++;
+        }
+      });
+      if (newAdvertisers) log(s, newAdvertisers + ' new advertiser' + (newAdvertisers > 1 ? 's' : '') + ' signed.', 'good');
+    }
+
+    // 4. anchors: renewals, auto-pitch (auto mode)
+    if (!classic) {
+      s.advertisers = s.advertisers.filter(function (a) {
+        if (a.kind !== 'anchor' || a.endMonth >= M) return true;
+        if (rngNext(s) < p.anchors.renewProb) {
+          a.endMonth += a.termMonths; a.nextBillMonth = M;
+          log(s, 'Anchor renewed: ' + a.name + ' on ' + NETWORK_NAMES[a.network] + '.', 'good');
+          return true;
+        }
+        log(s, 'Anchor lease ended: ' + a.name + ' on ' + NETWORK_NAMES[a.network] + '.', 'warn');
+        return false;
+      });
+      if (p.anchors.enabled && p.growth.autoExpand) {
+        NETWORKS.forEach(function (net) {
+          if (!activeScreens(s, net).length) return;
+          for (var k = 0; k < p.anchors.autoPitchPerMonth; k++) {
+            if (anchorSlotsUsed(s, net) + 1 > p.anchors.slotsPerNetwork) return;
+            var pool = s.institutions.filter(function (inst) { return inst.cooldownUntil <= M && !hasAnchor(s, inst.id, net); });
+            if (!pool.length) return;
+            var inst = pool[Math.floor(rngNext(s) * pool.length)];
+            pitchAnchorCore(s, p, inst, { network: net, slots: 1, termMonths: p.anchors.termMonths, billing: p.anchors.billing, exclusive: false, seasonal: p.anchors.seasonalWeighting }, M);
+          }
+        });
+      }
+    }
+
+    // 5. revenue
+    var rev = { ph: 0, ki: 0 }, nonAnchorRev = 0, anchorRev = 0, anchorBilled = 0, anchorTds = 0;
+    var clientRev = {};
+    var uptimeSum = 0, actNow = activeScreens(s);
+    actNow.forEach(function (sc) { uptimeSum += sc.uptimeShare; });
+    if (classic) {
+      actNow.forEach(function (sc) { rev[sc.network] += p.classic.revenuePerScreen * sc.uptimeShare; });
+      nonAnchorRev = rev.ph + rev.ki;
+    } else {
+      NETWORKS.forEach(function (net) {
+        var scs = activeScreens(s, net);
+        if (!scs.length) return;
+        var U = 0; scs.forEach(function (sc) { U += sc.uptimeShare; });
+        var eff = p.demand.makeGood ? U : scs.length;
+        s.advertisers.forEach(function (a) {
+          if (a.network !== net) return;
+          if (a.kind === 'anchor') {
+            if (a.startMonth > M) return;
+            var r = advMonthlyRate(p, a, M) * eff;
+            anchorRev += r; rev[net] += r;
+            clientRev[a.id] = (clientRev[a.id] || 0) + r;
+            if (a.nextBillMonth === M) {
+              var period = a.billing === 'annual' ? 12 : 3;
+              var billed = advMonthlyRate(p, a, M) * scs.length * period;
+              anchorBilled += billed; anchorTds += billed * p.anchors.tdsRate;
+              a.nextBillMonth = M + period;
+            }
+            return;
+          }
+          if (a.kind === 'founding' && M <= a.prepaidUntil) return;
+          if (rngNext(s) < p.events.adRuleBreach) {
+            breaches++;
+            log(s, 'Ad pulled for a rule breach (' + a.category + ') — refunded this month.', 'warn');
+            return;
+          }
+          var rr = advMonthlyRate(p, a, M) * eff;
+          nonAnchorRev += rr; rev[net] += rr;
+        });
+      });
+    }
+    var revenue = nonAnchorRev + anchorRev;
+
+    // 6. costs
+    var hostFees = 0, reserve = 0, licences = 0, data = 0;
+    var selfHosted = p.infra.cms === 'selfHosted' && M >= p.infra.cmsSwitchMonth;
+    var licIndex = 0;
+    actNow.forEach(function (sc) {
+      if (classic) return;
+      hostFees += p.opex.hostFee * (p.opex.hostPayFollowsUptime ? sc.uptimeShare : 1) + (sc.connectivity === 'shopWifi' ? p.infra.shopWifiHostFeeExtra : 0);
+      reserve += p.opex.reserve;
+      var age = M - sc.installedMonth - 1;
+      var lic = age < 12 ? p.opex.licenceY1 : p.opex.licenceY2;
+      if (selfHosted && !p.infra.selfHostedNeedsLicence) lic = 0;
+      if (p.mode !== 'plan' && licIndex < p.opex.freeLicences) lic = 0;
+      licIndex++;
+      licences += lic;
+      data += sc.connectivity === 'shopWifi' ? 0 : (sc.connectivity === 'sharedHotspot' && sc.paired ? p.opex.data / 2 : p.opex.data);
+    });
+    if (selfHosted && !classic) licences += p.infra.vpsMonthly;
+    var nLive = actNow.length;
+    var fixed = classic ? nLive * p.classic.expensePerScreen : fixedCost(p, nLive);
+    var gateway = classic ? 0 : nonAnchorRev * p.feeRate + anchorRev * p.anchors.feeRate;
+    var interest = Math.max(0, -cashBefore) * p.start.creditInterestMonthly;
+
+    // 9 (folded in). repairs come out of the reserve fund first, then cash
+    s.reserveFund += reserve;
+    var fromFund = Math.min(s.reserveFund, repairCost);
+    s.reserveFund -= fromFund;
+    var overflow = repairCost - fromFund;
+    reserve += overflow;
+    // spares used this month are restocked; the replacement is already inside repairCost
+    s.spares.tv += sparesUsed.tv; s.spares.hotspot += sparesUsed.hotspot;
+
+    var costs = gateway + hostFees + reserve + licences + data + fixed + interest;
+    var profit = revenue - costs;
+
+    // 7. cash (anchors billed in advance, recognised monthly; TDS back once a year)
+    var tdsBack = 0;
+    s.tdsReceivable += anchorTds;
+    if (M >= 15 && (M - 15) % 12 === 0 && s.tdsReceivable > 0) { tdsBack = s.tdsReceivable; s.tdsReceivable = 0; log(s, 'TDS refund received: ' + fmtINR(tdsBack) + '.', 'good'); }
+    s.cash += topup + profit + (anchorBilled - anchorTds - anchorRev) + tdsBack;
+
+    // 8. credit line / insolvency
+    if (s.cash < -s.creditLimit) {
+      var lines = { 'host fees': hostFees, 'fixed costs': fixed, 'licences': licences, 'data': data, 'hardware reserve and repairs': reserve, 'interest': interest };
+      var big = Object.keys(lines).sort(function (a, b) { return lines[b] - lines[a]; })[0];
+      s.insolvent = { month: M, cause: 'Cash need of ' + fmtINR(-s.cash) + ' went past the credit limit of ' + fmtINR(s.creditLimit) +
+        '. This month: revenue ' + fmtINR(revenue) + ', costs ' + fmtINR(costs) + ' (largest: ' + big + ' ' + fmtINR(lines[big]) + ').' };
+      log(s, 'INSOLVENT in month ' + M + ': ' + s.insolvent.cause, 'bad');
+    }
+
+    // 10. growth
+    var gates = gateStatus(s, p);
+    if (!s.insolvent && p.growth.autoExpand) minutes += autoExpand(s, p) * p.founder.pitch;
+
+    // 11. founder minutes
+    var nAnchors = s.advertisers.filter(function (a) { return a.kind === 'anchor'; }).length;
+    if (!classic) {
+      minutes += s.approvalsThisMonth * p.founder.approveAd + breaches * (p.founder.breach + p.founder.approveAd);
+      minutes += p.founder.appsScript ? 30 + 0.5 * nLive : p.founder.closeBase + p.founder.closePerScreen * nLive;
+      minutes += p.founder.weeklyReview * 4.3;
+      minutes += nAnchors * p.founder.anchorAccount;
+      if (selfHosted) minutes += p.founder.selfHostedExtra;
+    }
+    minutes += swaps * p.founder.swap + s.pitchesThisMonth * p.founder.pitch;
+    s.approvalsThisMonth = 0; s.pitchesThisMonth = 0;
+
+    var row = {
+      month: M,
+      screens_ph: s.screens.filter(function (x) { return x.network === 'ph'; }).length,
+      screens_ki: s.screens.filter(function (x) { return x.network === 'ki'; }).length,
+      slots_sold_ph: soldSlots(s, 'ph', true), slots_sold_ki: soldSlots(s, 'ki', true),
+      revenue: round(revenue), gateway_fees: round(gateway), host_fees: round(hostFees), reserve: round(reserve),
+      licences: round(licences), data: round(data), fixed: round(fixed), interest: round(interest),
+      profit: round(profit), cash: round(s.cash), credit_used: round(Math.max(0, -s.cash)),
+      uptime_pct: nLive ? Math.round(uptimeSum / nLive * 1000) / 10 : 100,
+      founder_hours_week: round2(minutes / 60 / 4.3),
+      anchors_active: nAnchors,
+      monthly_advertisers: s.advertisers.filter(function (a) { return a.kind !== 'anchor'; }).length
+    };
+    s.ledger.push(row);
+
+    // gate notices + concentration
+    var notices = gates.slice();
+    if (revenue > 0) for (var id in clientRev) if (clientRev[id] / revenue > 0.2) {
+      var an = s.advertisers.filter(function (a) { return a.id === id; })[0];
+      notices.push({ kind: 'warn', text: 'Concentration: ' + (an ? an.name : 'one client') + ' is ' + Math.round(clientRev[id] / revenue * 100) + '% of revenue' });
+    }
+    if (profit >= 100000 && !s.ledger.slice(0, -1).some(function (r) { return r.profit >= 100000; })) log(s, 'First month with net ≥ ₹1 lakh!', 'good');
+    s.notices = notices;
+    return row;
+  }
+
+  function gateStatus(s, p) {
+    var out = [];
+    NETWORKS.forEach(function (net) {
+      var n = s.screens.filter(function (x) { return x.network === net; }).length;
+      var sold = soldSlots(s, net, true);
+      if (n > 0 && n < p.growth.maxPerNetwork && sold >= p.growth.expandWhenSold)
+        out.push({ kind: 'gate', text: NETWORK_NAMES[net] + ' gate met: ' + sold + ' of ' + p.loop.sellable + ' sold' });
+    });
+    var ph = s.screens.filter(function (x) { return x.network === 'ph'; }).length;
+    var ki = s.screens.filter(function (x) { return x.network === 'ki'; }).length;
+    if (!ki && ph >= p.growth.kiranaLaunchWhenPharmacyScreens && soldSlots(s, 'ph', true) >= p.growth.expandWhenSold)
+      out.push({ kind: 'gate', text: 'Kirana launch gate met' });
+    return out;
+  }
+
+  // Section 9.1 expansion rule; returns number of new hosts.
+  function autoExpand(s, p) {
+    var added = 0;
+    var kc = kitCost(p, p.infra.player);
+    NETWORKS.forEach(function (net) {
+      var type = net === 'ph' ? 'pharmacy' : 'kirana';
+      var n = s.screens.filter(function (x) { return x.network === net; }).length;
+      var sold = soldSlots(s, net, true);
+      var add = 0;
+      if (net === 'ki' && n === 0) {
+        var phN = s.screens.filter(function (x) { return x.network === 'ph'; }).length;
+        if (soldSlots(s, 'ph', true) >= p.growth.expandWhenSold && phN >= p.growth.kiranaLaunchWhenPharmacyScreens && s.cash >= p.growth.batch * kc) add = p.growth.batch;
+      } else if (n > 0 && sold >= p.growth.expandWhenSold && n < p.growth.maxPerNetwork) {
+        add = Math.min(p.growth.batch, p.growth.maxPerNetwork - n);
+        if (s.cash < add * kc) add = 0;
+      }
+      if (!add) return;
+      var hosts = pickHosts(s, p, type, add);
+      hosts.forEach(function (shop) { shop.state = 'host'; addScreen(s, p, shop, s.month); s.cash -= kc; added++; });
+      if (hosts.length) log(s, (n === 0 ? 'Launched ' : 'Expanded ') + NETWORK_NAMES[net] + ': +' + hosts.length + ' screens (' + fmtINR(hosts.length * kc) + ').', 'good');
+    });
+    return added;
+  }
+
+  function moveScreen(s, p, sc) {
+    var old = shopById(s, sc.shopId);
+    var cands = s.shops.filter(function (sh) { return sh.type === old.type && sh.zone === old.zone && sh.state === 'prospect' && !screenAt(s, sh.id); });
+    if (!cands.length) cands = s.shops.filter(function (sh) { return sh.type === old.type && sh.state === 'prospect' && !screenAt(s, sh.id); });
+    old.state = 'removed';
+    if (s.hubShopId === old.id) s.hubShopId = null;
+    if (!cands.length) {
+      s.screens = s.screens.filter(function (x) { return x !== sc; });
+      s.cash += kitCost(p, sc.player) * 0.5;
+      log(s, old.name + ' ended the agreement; no new host available, screen sold.', 'bad');
+      return;
+    }
+    var nu = cands[0];
+    nu.state = 'host';
+    sc.shopId = nu.id; sc.x = nu.x; sc.y = nu.y; sc.zone = nu.zone;
+    log(s, old.name + ' ended the agreement; screen moved to ' + nu.name + ' (1 trip day).', 'warn');
+  }
+
+  function hasAnchor(s, instId, net) {
+    return s.advertisers.some(function (a) { return a.kind === 'anchor' && a.instId === instId && a.network === net; });
+  }
+
+  // ---------- player actions ----------
+  function fundsAvailable(s) { return s.cash + s.creditLimit; }
+
+  function pitchHost(s, shopId, opts) {
+    var p = effective(s.params);
+    var shop = shopById(s, shopId);
+    if (!shop) return { ok: false, reason: 'No such shop.' };
+    if (shop.state !== 'prospect') return { ok: false, reason: shop.state === 'pitched' ? 'Cooling off until month ' + shop.cooldownUntil + '.' : 'Already a host.' };
+    var offer = !!(opts && opts.offerHostSlot);
+    var chance = p.hostPitch.success + (offer ? p.hostPitch.hostSlotBonus : 0);
+    s.pitchesThisMonth++;
+    if (rngNext(s) < chance) {
+      shop.state = 'host'; shop.hostSlot = offer;
+      log(s, shop.name + ' agreed to host a screen' + (offer ? ' (host slot offered)' : '') + '.', 'good');
+      return { ok: true };
+    }
+    shop.state = 'pitched'; shop.cooldownUntil = s.month + p.hostPitch.cooldownMonths;
+    log(s, shop.name + ' said no. Try again in ' + p.hostPitch.cooldownMonths + ' months.', 'warn');
+    return { ok: false, reason: 'They said no. Cooling off for ' + p.hostPitch.cooldownMonths + ' months.' };
+  }
+
+  function installScreen(s, shopId, infra) {
+    var p = effective(s.params);
+    var shop = shopById(s, shopId);
+    if (!shop || shop.kind !== 'shop') return { ok: false, reason: 'Not a shop.' };
+    if (shop.state !== 'host') return { ok: false, reason: 'Pitch the shop first.' };
+    if (screenAt(s, shopId)) return { ok: false, reason: 'Already has a screen.' };
+    var player = (infra && infra.player) || p.infra.player;
+    var cost = kitCost(p, player);
+    if (fundsAvailable(s) < cost) return { ok: false, reason: 'Not enough money or credit (' + fmtINR(cost) + ' needed).' };
+    s.cash -= cost;
+    var sc = addScreen(s, p, shop, s.month, infra);
+    log(s, 'Installed a screen at ' + shop.name + ' for ' + fmtINR(cost) + '; live next month.', 'good');
+    return { ok: true, screen: sc };
+  }
+
+  function removeScreen(s, shopId) {
+    var p = effective(s.params);
+    var sc = screenAt(s, shopId);
+    if (!sc) return { ok: false, reason: 'No screen here.' };
+    var back = kitCost(p, sc.player) * 0.5;
+    s.cash += back;
+    s.screens = s.screens.filter(function (x) { return x !== sc; });
+    log(s, 'Removed the screen at ' + shopById(s, shopId).name + '; resale ' + fmtINR(back) + '.', 'warn');
+    return { ok: true };
+  }
+
+  function setHub(s, shopId) {
+    var shop = shopById(s, shopId);
+    if (!shop || shop.state !== 'host') return { ok: false, reason: 'Only a host shop can be the hub.' };
+    s.hubShopId = shopId;
+    log(s, shop.name + ' is now the hub shop (holds spares).');
+    return { ok: true };
+  }
+
+  function buySpare(s, kind) {
+    var p = effective(s.params);
+    if (!s.hubShopId) return { ok: false, reason: 'Mark a hub shop first.' };
+    var cost = kind === 'tv' ? p.kit.tv : p.kit.hotspot;
+    if (fundsAvailable(s) < cost) return { ok: false, reason: 'Not enough money or credit.' };
+    s.cash -= cost; s.spares[kind]++;
+    log(s, 'Bought a spare ' + (kind === 'tv' ? 'TV' : 'hotspot') + ' for ' + fmtINR(cost) + '.');
+    return { ok: true };
+  }
+
+  function anchorCheck(s, p, inst, form) {
+    if (!p.anchors.enabled) return 'Anchor leases are off. Turn them on in Config → Anchor leases.';
+    var net = form.network;
+    if (!s.screens.some(function (x) { return x.network === net; })) return 'The ' + NETWORK_NAMES[net] + ' network has no screens yet.';
+    if (form.slots < 1 || form.slots > p.anchors.maxSlotsPerClient) return 'One client can take at most ' + p.anchors.maxSlotsPerClient + ' slots.';
+    if (anchorSlotsUsed(s, net) + form.slots > p.anchors.slotsPerNetwork) return 'Only ' + (p.anchors.slotsPerNetwork - anchorSlotsUsed(s, net)) + ' anchor slots left on ' + NETWORK_NAMES[net] + '.';
+    if (hasAnchor(s, inst.id, net)) return inst.name + ' already has a lease on ' + NETWORK_NAMES[net] + '.';
+    var clash = s.advertisers.filter(function (a) { return a.kind === 'anchor' && a.network === net && a.category === inst.category && (a.exclusive || form.exclusive); })[0];
+    if (clash) return 'Exclusivity: ' + clash.name + ' already holds the ' + inst.category + ' category on ' + NETWORK_NAMES[net] + '.';
+    if (inst.cooldownUntil > s.month) return 'They asked you to come back in month ' + inst.cooldownUntil + '.';
+    return null;
+  }
+
+  function pitchAnchorCore(s, p, inst, form, startMonth) {
+    var why = anchorCheck(s, p, inst, form);
+    if (why) return { ok: false, reason: why };
+    s.pitchesThisMonth++;
+    var price = p.anchors.price * (form.billing === 'annual' ? 1 - p.anchors.annualDiscount : 1);
+    var monthly = price * form.slots * activeScreensOrAll(s, form.network);
+    if (monthly > inst.budgetMonthly) {
+      inst.cooldownUntil = s.month + p.anchors.cooldownMonths;
+      log(s, inst.name + ' liked it but ' + fmtINR(monthly) + '/month is over their ' + fmtINR(inst.budgetMonthly) + ' budget.', 'warn');
+      return { ok: false, reason: 'Over their budget of ' + fmtINR(inst.budgetMonthly) + ' a month (' + fmtINR(monthly) + ' asked).' };
+    }
+    var chance = p.anchors.pitchSuccess + (form.exclusive ? p.anchors.exclusivityBonus : 0);
+    if (rngNext(s) >= chance) {
+      inst.cooldownUntil = s.month + p.anchors.cooldownMonths;
+      log(s, inst.name + ' declined the anchor lease.', 'warn');
+      return { ok: false, reason: 'They declined. Try again after month ' + inst.cooldownUntil + '.' };
+    }
+    var a = { id: 'a' + (s.nextId++), kind: 'anchor', network: form.network, instId: inst.id, name: inst.name, category: inst.category,
+      slots: form.slots, rate: price, startMonth: startMonth, termMonths: form.termMonths, endMonth: startMonth + form.termMonths - 1,
+      billing: form.billing, exclusive: !!form.exclusive, seasonal: !!form.seasonal, nextBillMonth: startMonth };
+    s.advertisers.push(a);
+    s.approvalsThisMonth++;
+    log(s, 'Anchor lease signed: ' + inst.name + ', ' + form.slots + ' slot' + (form.slots > 1 ? 's' : '') + ' on ' + NETWORK_NAMES[form.network] + ', ' + form.termMonths + ' months, billed ' + form.billing + '.', 'good');
+    return { ok: true, anchor: a };
+  }
+  function activeScreensOrAll(s, net) { return Math.max(1, s.screens.filter(function (x) { return x.network === net; }).length); }
+
+  function pitchAnchor(s, instId, form) {
+    var p = effective(s.params);
+    var inst = instById(s, instId);
+    if (!inst) return { ok: false, reason: 'No such institution.' };
+    var f = { network: form.network || 'ph', slots: +form.slots || 1, termMonths: +form.termMonths || p.anchors.termMonths,
+      billing: form.billing || p.anchors.billing, exclusive: !!form.exclusive,
+      seasonal: form.seasonal != null ? !!form.seasonal : p.anchors.seasonalWeighting };
+    return pitchAnchorCore(s, p, inst, f, s.month + 1);
+  }
+
+  // Slots an anchor actually plays this month (seasonal weighting for schools/coaching).
+  function anchorPlaySlots(s, a) {
+    var p = effective(s.params);
+    if (!a.seasonal || (a.category !== 'school' && a.category !== 'coaching')) return a.slots;
+    var cm = calendarMonth(p, Math.max(1, s.month));
+    return p.anchors.peakMonths.indexOf(cm) >= 0 ? Math.min(2, Math.max(a.slots, 2)) : 1;
+  }
+
+  function setParam(s, path, value) {
+    var parts = path.split('.'), o = s.params;
+    for (var i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+    var old = o[parts[parts.length - 1]];
+    if (JSON.stringify(old) === JSON.stringify(value)) return;
+    o[parts[parts.length - 1]] = value;
+    if (path === 'start.creditLimit') s.creditLimit = effective(s.params).start.creditLimit;
+    log(s, 'Changed ' + path + ' from ' + JSON.stringify(old) + ' to ' + JSON.stringify(value) + ' (takes effect next month).');
+  }
+
+  function runTo(s, month) { while (s.month < month && !s.insolvent) tick(s); return s; }
+
+  function runScenario(params, months, opts) {
+    var s = newGame(params, opts);
+    runTo(s, months);
+    return s;
+  }
+
+  // ---------- Monte Carlo (section 7.5) ----------
+  function percentile(sorted, q) {
+    if (!sorted.length) return NaN;
+    var i = (sorted.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+  }
+  function monteCarlo(params, opts) {
+    opts = opts || {};
+    var runs = opts.runs || 500, months = opts.months || 36, seed = opts.seed != null ? opts.seed : 1;
+    var world = createWorld(opts.worldSeed != null ? opts.worldSeed : 7);
+    var by18 = 0, by24 = 0, breached = 0, firstMonths = [], lowCash = [], hours24 = [];
+    var profitByMonth = [], cashByMonth = [];
+    for (var m = 0; m < months; m++) { profitByMonth.push([]); cashByMonth.push([]); }
+    for (var i = 0; i < runs; i++) {
+      var s = newGame(params, { seed: seed + i, world: world, worldSeed: opts.worldSeed });
+      s.log = []; s.quiet = true; // no event text in batch runs
+      var first = Infinity, low = s.cash;
+      while (s.month < months && !s.insolvent) {
+        var r = tick(s);
+        if (r.profit >= 100000 && first === Infinity) first = r.month;
+        if (r.cash < low) low = r.cash;
+        profitByMonth[r.month - 1].push(r.profit);
+        cashByMonth[r.month - 1].push(r.cash);
+        if (r.month === 24) hours24.push(r.founder_hours_week);
+      }
+      if (s.insolvent) { breached++; low = Math.min(low, -s.creditLimit - 1); }
+      if (first <= 18) by18++;
+      if (first <= 24) by24++;
+      firstMonths.push(first);
+      lowCash.push(low);
+    }
+    var num = function (a, b) { return a - b; };
+    firstMonths.sort(num); lowCash.sort(num); hours24.sort(num);
+    var fan = profitByMonth.map(function (arr, k) {
+      arr.sort(num);
+      return { month: k + 1, n: arr.length, p10: percentile(arr, 0.1), p50: percentile(arr, 0.5), p90: percentile(arr, 0.9) };
+    });
+    var cashFan = cashByMonth.map(function (arr, k) {
+      arr.sort(num);
+      return { month: k + 1, n: arr.length, p10: percentile(arr, 0.1), p50: percentile(arr, 0.5), p90: percentile(arr, 0.9) };
+    });
+    var med = percentile(firstMonths, 0.5);
+    return {
+      runs: runs, months: months,
+      pLakhBy18: by18 / runs, pLakhBy24: by24 / runs,
+      medianMonthToLakh: isFinite(med) ? med : null,
+      p5LowestCash: percentile(lowCash, 0.05),
+      pCreditBreached: breached / runs,
+      medianHoursAt24: hours24.length ? percentile(hours24, 0.5) : null,
+      fan: fan, cashFan: cashFan
+    };
+  }
+
+  // ---------- CSV / JSON ----------
+  function ledgerToCSV(ledger) {
+    var lines = [LEDGER_COLUMNS.join(',')];
+    ledger.forEach(function (r) { lines.push(LEDGER_COLUMNS.map(function (c) { return r[c]; }).join(',')); });
+    return lines.join('\n') + '\n';
+  }
+  function csvToLedger(text) {
+    var lines = String(text).trim().split(/\r?\n/);
+    var head = lines.shift().split(',');
+    return lines.filter(Boolean).map(function (l) {
+      var v = l.split(','), r = {};
+      head.forEach(function (h, i) { r[h] = Number(v[i]); });
+      return r;
+    });
+  }
+  function exportState(s) { return JSON.stringify(s); }
+  function importState(text) {
+    var s = JSON.parse(text);
+    if (!s || !s.params || !Array.isArray(s.ledger)) throw new Error('Not a Haspot Sim save file.');
+    s.params = merge(DEFAULTS, s.params);
+    return s;
+  }
+
+  return {
+    DEFAULTS: DEFAULTS, PRESETS: PRESETS, ZONES: ZONES, GRID: GRID, LEDGER_COLUMNS: LEDGER_COLUMNS, NETWORK_NAMES: NETWORK_NAMES,
+    makeParams: makeParams, presetParams: presetParams, presetById: presetById, effective: effective, merge: merge, clone: clone,
+    createWorld: createWorld, newGame: newGame, tick: tick, runTo: runTo, runScenario: runScenario,
+    pitchHost: pitchHost, installScreen: installScreen, removeScreen: removeScreen, setHub: setHub, buySpare: buySpare,
+    pitchAnchor: pitchAnchor, anchorCheck: function (s, instId, form) { return anchorCheck(s, effective(s.params), instById(s, instId), form); },
+    anchorPlaySlots: anchorPlaySlots, setParam: setParam, gateStatus: function (s) { return gateStatus(s, effective(s.params)); },
+    kitCost: kitCost, opexPerScreen: opexPerScreen, fixedCost: fixedCost, perScreenMargin: perScreenMargin, screensFor: screensFor,
+    paybackMonths: paybackMonths, steadyNet: steadyNet, calendarLabel: calendarLabel, calendarMonth: calendarMonth,
+    soldSlots: soldSlots, anchorSlotsUsed: anchorSlotsUsed, openCapacity: function (s) { return openCapacity(s, effective(s.params)); },
+    activeScreens: activeScreens, shopById: shopById, instById: instById, screenAt: screenAt, advMonthlyRate: advMonthlyRate,
+    monteCarlo: monteCarlo, ledgerToCSV: ledgerToCSV, csvToLedger: csvToLedger, exportState: exportState, importState: importState,
+    fmtINR: fmtINR, rngNext: rngNext
+  };
+})();
+</script>
+<script id="ui">
+(function () {
+  'use strict';
+  var E = HaspotEngine;
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = E.fmtINR;
+  var AUTOSAVE_KEY = 'haspot-sim-autosave-v1';
+  var PERIOD = { 1: 60000, 2: 5000, 3: 1000 }; // ms per month by speed
+
+  var S = null;            // game state
+  var speed = 0, acc = 0, lastTs = 0;
+  var selected = null;     // { kind: 'shop'|'inst', id }
+  var netTab = 'ph';
+  var view = { scale: 1, ox: 0, oy: 0 };
+  var dirty = true;
+  var selMsg = null;       // { text, cls } shown under the selection panel
+  var hover = null;
+
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function P() { return E.effective(S.params); }
+  function lastRow() { return S.ledger[S.ledger.length - 1] || null; }
+  function compact(v) {
+    var a = Math.abs(v), sg = v < 0 ? '−' : '';
+    if (a >= 1e7) return sg + '₹' + (a / 1e7).toFixed(1) + 'Cr';
+    if (a >= 1e5) return sg + '₹' + (a / 1e5).toFixed(a >= 1e6 ? 0 : 1) + 'L';
+    if (a >= 1e3) return sg + '₹' + Math.round(a / 1e3) + 'k';
+    return sg + '₹' + Math.round(a);
+  }
+  function pct(x) { return x == null || isNaN(x) ? '—' : Math.round(x * 100) + '%'; }
+  function limitText(v) { return v >= 1e14 ? 'unlimited' : fmt(v); }
+
+  // ---------- autosave (per-browser convenience only) ----------
+  function autosave() { try { localStorage.setItem(AUTOSAVE_KEY, E.exportState(S)); } catch (e) { /* storage unavailable */ } }
+  function readAutosave() { try { var t = localStorage.getItem(AUTOSAVE_KEY); return t ? E.importState(t) : null; } catch (e) { return null; } }
+
+  // ---------- game lifecycle ----------
+  function startGame(state) {
+    S = state; selected = null; selMsg = null; speed = 0; acc = 0;
+    fitView(); renderAll(); autosave();
+  }
+  function doTick() {
+    if (!S || S.insolvent) return;
+    E.tick(S);
+    dirty = true;
+    if (S.insolvent) { setSpeed(0); renderAll(); gameOverModal(); }
+    autosave();
+  }
+  function setSpeed(v) {
+    if (v === 4) { jumpModal(); return; }
+    speed = v; acc = 0;
+    document.querySelectorAll('#speedbox [data-speed]').forEach(function (b) { b.classList.toggle('on', +b.dataset.speed === speed); });
+    renderTime();
+  }
+
+  // ---------- main loop ----------
+  function frame(ts) {
+    var dt = lastTs ? Math.min(ts - lastTs, 1000) : 0;
+    lastTs = ts;
+    if (S && speed >= 1 && speed <= 3 && !modalOpen()) {
+      acc += dt;
+      var per = PERIOD[speed], ticked = false;
+      while (acc >= per && !S.insolvent) { acc -= per; doTick(); ticked = true; }
+      if (ticked) renderAll(); else renderTimeBar();
+    }
+    if (dirty) { draw(); dirty = false; }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- map ----------
+  var canvas = $('map'), ctx = canvas.getContext('2d');
+  var T = E.GRID.tile, WW = E.GRID.w * T, WH = E.GRID.h * T;
+  var ZONE_TINT = { lanka: '#EFE7D6', sigra: '#E9E3D3', godowlia: '#F0E2CF', cantt: '#E6E6D6', bhelupur: '#ECE4D9' };
+  var COLORS = { pharmacy: '#2E7D6B', kirana: '#8C6A33', inst: '#4A5A8C', road: '#D3C8B4', roadLine: '#F6F1E7' };
+
+  function resize() {
+    var r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+    dirty = true;
+  }
+  function fitView() {
+    resize();
+    var r = canvas.getBoundingClientRect();
+    view.scale = Math.min((r.width - 20) / WW, (r.height - 20) / WH);
+    view.ox = (r.width - WW * view.scale) / 2; view.oy = (r.height - WH * view.scale) / 2 + 8;
+    dirty = true;
+  }
+  function draw() {
+    if (!S) return;
+    var dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#E4DBC9'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, dpr * view.ox, dpr * view.oy);
+    E.ZONES.forEach(function (z) {
+      ctx.fillStyle = ZONE_TINT[z.id]; ctx.fillRect(z.x * T, z.y * T, z.w * T, z.h * T);
+    });
+    // roads
+    ctx.fillStyle = COLORS.road;
+    for (var y = 0; y < E.GRID.h; y++) for (var x = 0; x < E.GRID.w; x++) if (S.road[y][x]) ctx.fillRect(x * T, y * T, T, T);
+    // zone borders + labels
+    ctx.strokeStyle = 'rgba(20,35,31,.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    E.ZONES.forEach(function (z) { ctx.strokeRect(z.x * T + 0.75, z.y * T + 0.75, z.w * T - 1.5, z.h * T - 1.5); });
+    ctx.setLineDash([]);
+    // institutions
+    S.institutions.forEach(function (b) {
+      var x = b.x * T, y = b.y * T;
+      var anchored = S.advertisers.some(function (a) { return a.kind === 'anchor' && a.instId === b.id; });
+      ctx.fillStyle = COLORS.inst; ctx.globalAlpha = anchored ? 1 : 0.8;
+      roundRect(x + 2, y + 2, 2 * T - 4, 2 * T - 4, 4); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; ctx.font = '700 16px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText({ hospital: 'H', school: 'S', coaching: 'C', lab: 'L' }[b.type], x + T, y + T);
+      if (anchored) { ctx.fillStyle = '#E9A23B'; ctx.beginPath(); ctx.arc(x + 2 * T - 8, y + 8, 5, 0, 7); ctx.fill(); }
+      ctx.textAlign = 'left';
+      if (selected && selected.id === b.id) { ctx.strokeStyle = '#E9A23B'; ctx.lineWidth = 3; roundRect(x + 0.5, y + 0.5, 2 * T - 1, 2 * T - 1, 5); ctx.stroke(); }
+    });
+    // shops + screens
+    var scByShop = {};
+    S.screens.forEach(function (sc) { scByShop[sc.shopId] = sc; });
+    S.shops.forEach(function (b) {
+      var x = b.x * T, y = b.y * T;
+      var col = b.type === 'pharmacy' ? COLORS.pharmacy : COLORS.kirana;
+      if (b.state === 'removed') col = '#9A9A92';
+      ctx.globalAlpha = b.state === 'prospect' ? 0.42 : (b.state === 'pitched' ? 0.6 : 1);
+      ctx.fillStyle = col; roundRect(x + 2, y + 2, T - 4, T - 4, 3); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (b.state === 'pitched') { ctx.setLineDash([3, 2]); ctx.strokeStyle = '#14231F'; ctx.lineWidth = 1; roundRect(x + 2.5, y + 2.5, T - 5, T - 5, 3); ctx.stroke(); ctx.setLineDash([]); }
+      if (b.state === 'removed') { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 7, y + 7); ctx.lineTo(x + T - 7, y + T - 7); ctx.moveTo(x + T - 7, y + 7); ctx.lineTo(x + 7, y + T - 7); ctx.stroke(); }
+      var sc = scByShop[b.id];
+      if (sc) {
+        var pending = sc.installedMonth >= S.month;
+        var bc = pending ? '#B9C3BD' : sc.status === 'failed' ? '#B5523B' : sc.status === 'dark' ? '#C98A12' : '#3FA866';
+        ctx.fillStyle = '#14231F'; ctx.fillRect(x + 4, y + 6, T - 8, T - 13);
+        ctx.strokeStyle = bc; ctx.lineWidth = 2.2; ctx.strokeRect(x + 4, y + 6, T - 8, T - 13);
+      } else if (b.state === 'host') {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]); ctx.strokeRect(x + 5, y + 7, T - 10, T - 15); ctx.setLineDash([]);
+      }
+      if (S.hubShopId === b.id) { ctx.fillStyle = '#E9A23B'; ctx.beginPath(); ctx.arc(x + T - 4, y + 4, 4, 0, 7); ctx.fill(); ctx.strokeStyle = '#14231F'; ctx.lineWidth = 1; ctx.stroke(); }
+      if (selected && selected.id === b.id) { ctx.strokeStyle = '#E9A23B'; ctx.lineWidth = 3; roundRect(x + 0.5, y + 0.5, T - 1, T - 1, 4); ctx.stroke(); }
+      if (hover && hover.id === b.id && !(selected && selected.id === b.id)) { ctx.strokeStyle = '#14231F'; ctx.lineWidth = 1.5; roundRect(x + 1, y + 1, T - 2, T - 2, 4); ctx.stroke(); }
+    });
+    // zone labels on top
+    ctx.font = '600 13px system-ui, sans-serif'; ctx.textBaseline = 'top';
+    E.ZONES.forEach(function (z) {
+      var label = z.name + '  ·  footfall ×' + z.footfall;
+      var w = ctx.measureText(label).width + 10;
+      ctx.fillStyle = 'rgba(20,35,31,.85)'; ctx.fillRect(z.x * T + 6, z.y * T + 6, w, 19);
+      ctx.fillStyle = '#F6F1E7'; ctx.fillText(label, z.x * T + 11, z.y * T + 9);
+    });
+  }
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function hitTest(cx, cy) {
+    var wx = (cx - view.ox) / view.scale / T, wy = (cy - view.oy) / view.scale / T;
+    var tx = Math.floor(wx), ty = Math.floor(wy);
+    for (var i = 0; i < S.shops.length; i++) { var b = S.shops[i]; if (b.x === tx && b.y === ty) return { kind: 'shop', id: b.id }; }
+    for (var j = 0; j < S.institutions.length; j++) { var c = S.institutions[j]; if (tx >= c.x && tx < c.x + 2 && ty >= c.y && ty < c.y + 2) return { kind: 'inst', id: c.id }; }
+    return null;
+  }
+
+  var drag = null;
+  canvas.addEventListener('mousedown', function (e) { drag = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy, moved: false }; });
+  window.addEventListener('mousemove', function (e) {
+    if (drag) {
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) { drag.moved = true; canvas.classList.add('dragging'); }
+      if (drag.moved) { view.ox = drag.ox + dx; view.oy = drag.oy + dy; dirty = true; }
+      return;
+    }
+    if (!S || e.target !== canvas) { if (hover) { hover = null; $('tip').style.display = 'none'; dirty = true; } return; }
+    var r = canvas.getBoundingClientRect();
+    var h = hitTest(e.clientX - r.left, e.clientY - r.top);
+    if ((h && h.id) !== (hover && hover.id)) { hover = h; dirty = true; }
+    showTip(h, e.clientX - r.left, e.clientY - r.top);
+  });
+  window.addEventListener('mouseup', function (e) {
+    if (!drag) return;
+    var wasDrag = drag.moved; drag = null; canvas.classList.remove('dragging');
+    if (wasDrag || e.target !== canvas || !S) return;
+    var r = canvas.getBoundingClientRect();
+    selected = hitTest(e.clientX - r.left, e.clientY - r.top); selMsg = null;
+    if (selected && selected.kind === 'shop') { var sh = E.shopById(S, selected.id); netTab = sh.type === 'pharmacy' ? 'ph' : 'ki'; }
+    dirty = true; renderSel(); renderNet(); renderAdv();
+  });
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var r = canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    var ns = Math.min(4, Math.max(0.4, view.scale * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+    view.ox = mx - (mx - view.ox) * ns / view.scale; view.oy = my - (my - view.oy) * ns / view.scale; view.scale = ns;
+    dirty = true;
+  }, { passive: false });
+  window.addEventListener('resize', function () { resize(); });
+
+  function showTip(h, x, y) {
+    var tip = $('tip');
+    if (!h) { tip.style.display = 'none'; return; }
+    var html;
+    if (h.kind === 'shop') {
+      var b = E.shopById(S, h.id), sc = E.screenAt(S, h.id), p = P();
+      var fee = p.opex.hostFee + (sc && sc.connectivity === 'shopWifi' ? p.infra.shopWifiHostFeeExtra : 0);
+      html = '<b>' + esc(b.name) + '</b><br>' + (b.type === 'pharmacy' ? 'Pharmacy' : 'Kirana') + ' · ' + esc(zoneName(b.zone)) + '<br>' + stateText(b) +
+        (sc || b.state === 'host' ? '<br>Host fee badge: <b>' + fmt(fee) + '/mo</b>' : '') + '<br>Footfall ' + b.footfall + '/day';
+    } else {
+      var i = E.instById(S, h.id);
+      html = '<b>' + esc(i.name) + '</b><br>' + cap(i.type) + ' · anchor prospect<br>Budget ' + fmt(i.budgetMonthly) + '/mo';
+    }
+    tip.innerHTML = html; tip.style.display = 'block';
+    var w = $('mapwrap').clientWidth;
+    tip.style.left = Math.min(x + 14, w - 250) + 'px'; tip.style.top = (y + 14) + 'px';
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function zoneName(id) { for (var i = 0; i < E.ZONES.length; i++) if (E.ZONES[i].id === id) return E.ZONES[i].name; return id; }
+  function stateText(b) {
+    var sc = E.screenAt(S, b.id);
+    if (sc) return sc.installedMonth >= S.month ? 'Screen installed — live next month' : 'Screen ' + (sc.status === 'live' ? 'live' : sc.status === 'dark' ? 'had dark days' : 'failed') ;
+    return { prospect: 'Prospect — not pitched', pitched: 'Said no — cooling off', host: 'Host, no screen yet', removed: 'Agreement ended' }[b.state];
+  }
+
+  // ---------- HUD ----------
+  function renderHUD() {
+    var r = lastRow() || {}, p = P();
+    var ph = S.screens.filter(function (x) { return x.network === 'ph'; }).length, ki = S.screens.length - ph;
+    var net = r.profit || 0;
+    var items = [
+      ['Money', fmt(Math.max(0, S.cash)), S.cash < 0 ? 'neg' : ''],
+      ['Credit used / limit', compact(Math.max(0, -S.cash)) + ' / ' + (S.creditLimit >= 1e14 ? '∞' : compact(S.creditLimit)), S.cash < 0 ? 'neg' : ''],
+      ['Revenue / mo', fmt(r.revenue || 0), ''],
+      ['Expenses / mo', fmt((r.revenue || 0) - net), ''],
+      ['Net / mo', fmt(net), net < 0 ? 'neg' : (net >= 100000 ? 'pos' : '')],
+      ['Screens ph / ki', ph + ' / ' + ki, ''],
+      ['Slots sold ph / ki', E.soldSlots(S, 'ph', true) + ' / ' + E.soldSlots(S, 'ki', true), ''],
+      ['Uptime', (r.uptime_pct != null ? r.uptime_pct : 100) + '%', ''],
+      ['Your hours / week', (r.founder_hours_week != null ? r.founder_hours_week.toFixed(1) : '0.0'), (r.founder_hours_week || 0) > 4 ? 'neg' : '']
+    ];
+    if (p.mode === 'classic') items[6] = ['Mode', 'Classic', ''];
+    $('hud').innerHTML = items.map(function (it) {
+      return '<div class="metric"><div class="k">' + it[0] + '</div><div class="v ' + it[2] + '">' + it[1] + '</div></div>';
+    }).join('');
+  }
+  function renderChips() {
+    var chips = E.gateStatus(S).concat((S.notices || []).filter(function (n) { return n.kind === 'warn'; }));
+    var p = P();
+    var html = chips.map(function (c) { return '<span class="chip ' + c.kind + '">' + esc(c.text) + '</span>'; }).join('');
+    var modeTxt = p.mode === 'plan' ? 'Plan mode (deterministic)' : p.mode === 'classic' ? 'Classic rules' : 'Stochastic';
+    html += '<span class="chip muted">' + modeTxt + ' · seed ' + S.seed + ' · auto-expand ' + (p.growth.autoExpand ? 'on' : 'off') + '</span>';
+    $('chips').innerHTML = html;
+  }
+  function renderTime() {
+    var p = P();
+    $('tmonth').textContent = 'Month ' + S.month + (S.month ? ' · ' + E.calendarLabel(p, S.month) : ' · start');
+    var label = { 0: 'Paused', 1: 'Real time: 1 minute = 1 month', 2: '1 month every 5 s', 3: '1 month every second' }[speed];
+    $('tsub').textContent = (S.insolvent ? 'Insolvent in month ' + S.insolvent.month : label) + (S.month < 1 ? ' · next: ' + E.calendarLabel(p, 1) : '');
+    renderTimeBar();
+  }
+  function renderTimeBar() { $('tbar').style.width = (speed >= 1 && speed <= 3 ? Math.min(100, acc / PERIOD[speed] * 100) : 0) + '%'; }
+  function renderHint() {
+    var h = $('hint'), p = P();
+    var txt = '';
+    if (!S.screens.length && !p.growth.autoExpand) txt = 'Start here: click a pale green pharmacy, pitch it, then install a screen. Press Space to let time run.';
+    else if (S.screens.length && S.month === 0) txt = 'Screens go live next month. Press N for one month or Space to run.';
+    h.style.display = txt ? 'block' : 'none'; h.textContent = txt;
+  }
+
+  // ---------- sidebar ----------
+  function renderSel() {
+    var el = $('selpanel'), p = P();
+    var msg = selMsg ? '<div class="msg ' + selMsg.cls + '">' + esc(selMsg.text) + '</div>' : '';
+    if (!selected) {
+      el.innerHTML = '<h3>Selected</h3><div class="empty">Click a building on the map. Pharmacies and kiranas host screens; hospitals (H), schools (S), coaching (C) and labs (L) can take anchor leases.</div>' + msg;
+      return;
+    }
+    if (selected.kind === 'inst') {
+      var inst = E.instById(S, selected.id);
+      var leases = S.advertisers.filter(function (a) { return a.kind === 'anchor' && a.instId === inst.id; });
+      el.innerHTML = '<h3>Selected</h3><div class="title">' + esc(inst.name) + '<span class="tag">' + cap(inst.type) + '</span></div>' +
+        '<div class="kv"><div>Zone</div><div>' + esc(zoneName(inst.zone)) + '</div><div>Budget</div><div>' + fmt(inst.budgetMonthly) + ' / mo</div>' +
+        '<div>Category</div><div>' + inst.category + '</div><div>Can pitch</div><div>' + (inst.cooldownUntil > S.month ? 'after month ' + inst.cooldownUntil : 'now') + '</div>' +
+        '<div>Leases</div><div>' + (leases.length ? leases.map(function (a) { return E.NETWORK_NAMES[a.network] + ' ×' + a.slots + ' to m' + a.endMonth; }).join(', ') : 'none') + '</div></div>' +
+        '<div class="actions"><button class="primary" data-act="anchor"' + (S.insolvent ? ' disabled' : '') + '>Pitch anchor lease…</button>' +
+        (p.anchors.enabled ? '' : '<span class="loopkey">Anchor leases are off — turn on in Config.</span>') + '</div>' + msg;
+      return;
+    }
+    var b = E.shopById(S, selected.id), sc = E.screenAt(S, b.id);
+    var kc = E.kitCost(p, p.infra.player);
+    var html = '<h3>Selected</h3><div class="title">' + esc(b.name) + '<span class="tag">' + (b.type === 'pharmacy' ? 'Pharmacy' : 'Kirana') + '</span>' +
+      (sc ? '<span class="tag ' + (sc.installedMonth >= S.month ? '' : sc.status) + '">' + (sc.installedMonth >= S.month ? 'pending' : sc.status) + '</span>' : '') +
+      (S.hubShopId === b.id ? '<span class="tag" style="background:var(--marigold)">hub</span>' : '') + '</div>' +
+      '<div class="kv"><div>Zone</div><div>' + esc(zoneName(b.zone)) + '</div><div>State</div><div>' + stateText(b) + '</div>' +
+      '<div>Footfall</div><div>' + b.footfall + ' / day</div><div>Inverter</div><div>' + (b.hasInverter ? 'yes' : 'no') + '</div>' +
+      '<div>Wi-Fi quality</div><div>' + Math.round(b.wifiQuality * 100) + '%</div><div>Host reliability</div><div>' + Math.round(b.hostReliability * 100) + '%</div>';
+    if (sc) {
+      html += '<div>Player / link</div><div>' + (sc.player === 'pi' ? 'Raspberry Pi' : 'Android TV') + ' / ' + { own4G: 'own 4G', shopWifi: 'shop Wi-Fi', sharedHotspot: 'shared hotspot' }[sc.connectivity] + '</div>' +
+        '<div>Installed</div><div>month ' + sc.installedMonth + '</div><div>Dark days (last month)</div><div>' + sc.darkDaysThisMonth + '</div>' +
+        '<div>Uptime share</div><div>' + Math.round(sc.uptimeShare * 100) + '%</div>';
+    }
+    if (S.hubShopId === b.id) html += '<div>Spares</div><div>' + S.spares.tv + ' TV · ' + S.spares.hotspot + ' hotspot</div>';
+    html += '</div><div class="actions">';
+    var dis = S.insolvent ? ' disabled' : '';
+    if (b.state === 'prospect') {
+      html += '<button class="primary" data-act="pitch"' + dis + '>Pitch host (' + Math.round((p.hostPitch.success + (b._offer ? p.hostPitch.hostSlotBonus : 0)) * 100) + '%)</button>' +
+        '<label><input type="checkbox" id="offerslot"' + (b._offer ? ' checked' : '') + '> offer host slot (+' + Math.round(p.hostPitch.hostSlotBonus * 100) + '%)</label>';
+    } else if (b.state === 'pitched') {
+      html += '<span class="loopkey">Cooling off until month ' + b.cooldownUntil + '.</span>';
+    } else if (b.state === 'host' && !sc) {
+      html += '<div class="row"><label>Player</label><select id="inPlayer"><option value="androidTV">Android TV</option><option value="pi">Raspberry Pi (+' + fmt(p.infra.piExtra) + ')</option></select></div>' +
+        '<div class="row"><label>Link</label><select id="inConn"><option value="own4G">Own 4G hotspot</option><option value="shopWifi">Shop Wi-Fi</option><option value="sharedHotspot">Shared hotspot</option></select></div>' +
+        '<button class="primary" data-act="install"' + dis + '>Install screen (' + fmt(kc) + ')</button>';
+    } else if (sc) {
+      html += '<button data-act="remove"' + dis + '>Remove screen (resale ' + fmt(E.kitCost(p, sc.player) * 0.5) + ')</button>';
+    }
+    if (b.state === 'host' && S.hubShopId !== b.id) html += '<button data-act="hub"' + dis + '>Mark as hub shop</button>';
+    if (S.hubShopId === b.id) html += '<button data-act="spareTV"' + dis + '>Buy spare TV (' + fmt(p.kit.tv) + ')</button><button data-act="spareHS"' + dis + '>Buy spare hotspot (' + fmt(p.kit.hotspot) + ')</button>';
+    html += '</div>' + msg;
+    el.innerHTML = html;
+    if ($('inPlayer')) { $('inPlayer').value = p.infra.player; $('inConn').value = p.infra.connectivity; }
+  }
+
+  function renderNet() {
+    var p = P(), net = netTab;
+    var scs = S.screens.filter(function (x) { return x.network === net; });
+    var active = E.activeScreens(S, net);
+    var advs = S.advertisers.filter(function (a) { return a.network === net; });
+    var blocks = ['<div class="slot-host" title="Host slot (not sold)">host</div>', '<div class="slot-house" title="House slot (not sold)">house</div>'];
+    var sellable = p.loop.sellable, used = 0;
+    var anchors = advs.filter(function (a) { return a.kind === 'anchor'; });
+    var reserved = p.anchors.enabled ? p.anchors.slotsPerNetwork : 0;
+    var anchorBlocks = 0;
+    anchors.forEach(function (a) {
+      var play = E.anchorPlaySlots(S, a);
+      for (var i = 0; i < a.slots && anchorBlocks < reserved; i++) {
+        blocks.push('<div class="slot-anchor" title="' + esc(a.name) + (i >= play ? ' (off-peak: house content)' : '') + '">' + (i >= play ? 'A·' : 'A') + '</div>');
+        anchorBlocks++;
+      }
+    });
+    for (; anchorBlocks < reserved; anchorBlocks++) blocks.push('<div class="slot-open" title="Reserved for anchors">A?</div>');
+    used = 2 + reserved;
+    advs.filter(function (a) { return a.kind !== 'anchor'; }).forEach(function (a) {
+      if (used >= 2 + sellable) return;
+      blocks.push(a.kind === 'half' ? '<div class="slot-half" title="Half slot">½</div>' : '<div class="slot-sold" title="' + a.kind + '">' + (a.kind === 'founding' ? 'F' : '₹') + '</div>');
+      used++;
+    });
+    while (used < 2 + sellable) { blocks.push('<div class="slot-open" title="Open">–</div>'); used++; }
+    var plays = 30 * p.loop.openHours * 30;
+    var priceKey = 'price.byNetwork.' + net;
+    var curPrice = (p.price.byNetwork && p.price.byNetwork[net]) || p.price.list;
+    $('netpanel').innerHTML = '<h3>Network <span class="tabs"><button data-net="ph" class="' + (net === 'ph' ? 'on' : '') + '">Pharmacy</button><button data-net="ki" class="' + (net === 'ki' ? 'on' : '') + '">Kirana</button></span></h3>' +
+      '<div class="kv"><div>Screens</div><div>' + scs.length + ' (' + active.length + ' live, max ' + p.growth.maxPerNetwork + ')</div>' +
+      '<div>Slots sold</div><div>' + E.soldSlots(S, net, true) + ' of ' + sellable + '</div>' +
+      '<div>Plays per slot / screen / mo</div><div>' + plays.toLocaleString('en-IN') + '</div></div>' +
+      '<div class="loop">' + blocks.join('') + '</div>' +
+      '<div class="loopkey">12 × 10 s slots in a 2-minute loop · F founding · ₹ monthly · ½ half slot · A anchor</div>' +
+      '<div class="row" style="margin-top:8px"><label for="netprice">List price ₹ / screen / slot / mo</label><input type="number" id="netprice" min="50" step="50" value="' + curPrice + '" data-path="' + priceKey + '"' + (S.insolvent ? ' disabled' : '') + '></div>';
+  }
+
+  function renderAdv() {
+    var p = P();
+    var advs = S.advertisers.filter(function (a) { return a.network === netTab; });
+    $('advcount').textContent = advs.length ? '(' + E.NETWORK_NAMES[netTab] + ': ' + advs.length + ')' : '';
+    if (!advs.length) { $('advlist').innerHTML = '<li class="empty">No advertisers on ' + E.NETWORK_NAMES[netTab] + ' yet.' + (S.screens.some(function (x) { return x.network === netTab; }) ? ' They arrive month by month once screens are live.' : ' Install screens first.') + '</li>'; return; }
+    $('advlist').innerHTML = advs.map(function (a) {
+      var rate = E.advMonthlyRate(p, a, Math.max(1, S.month));
+      var when;
+      if (a.kind === 'anchor') when = 'lease to m' + a.endMonth + ', ' + a.billing + (a.exclusive ? ', exclusive' : '');
+      else if (a.kind === 'founding') when = S.month <= a.prepaidUntil ? 'prepaid to m' + a.prepaidUntil : (S.month <= a.lockedUntil ? 'locked to m' + a.lockedUntil : 'monthly');
+      else when = 'monthly, rolling';
+      var name = a.kind === 'anchor' ? esc(a.name) : cap(a.kind) + ' · ' + a.category;
+      return '<li><span>' + name + '</span><span>' + fmt(rate) + '/scr · ' + when + '</span></li>';
+    }).join('');
+  }
+
+  function renderLog() {
+    $('log').innerHTML = S.log.slice(0, 120).map(function (l) { return '<li class="' + l.kind + '"><b>m' + l.month + '</b>' + esc(l.text) + '</li>'; }).join('') || '<li class="empty">Nothing yet.</li>';
+  }
+
+  function renderAll() {
+    if (!S) return;
+    renderHUD(); renderChips(); renderTime(); renderSel(); renderNet(); renderAdv(); renderLog(); renderHint();
+    dirty = true;
+  }
+
+  document.querySelector('aside').addEventListener('click', function (e) {
+    var t = e.target.closest('button'); if (!t || !S) return;
+    if (t.dataset.net) { netTab = t.dataset.net; renderNet(); renderAdv(); return; }
+    var act = t.dataset.act; if (!act) return;
+    var res = null;
+    if (act === 'pitch') res = E.pitchHost(S, selected.id, { offerHostSlot: $('offerslot') && $('offerslot').checked });
+    if (act === 'install') res = E.installScreen(S, selected.id, { player: $('inPlayer').value, connectivity: $('inConn').value });
+    if (act === 'remove') res = E.removeScreen(S, selected.id);
+    if (act === 'hub') res = E.setHub(S, selected.id);
+    if (act === 'spareTV') res = E.buySpare(S, 'tv');
+    if (act === 'spareHS') res = E.buySpare(S, 'hotspot');
+    if (act === 'anchor') { anchorModal(selected.id); return; }
+    if (res) {
+      selMsg = res.ok ? { cls: 'good', text: act === 'pitch' ? 'They said yes. Install a screen next.' : 'Done.' } : { cls: 'bad', text: res.reason };
+      autosave(); renderAll();
+    }
+  });
+  document.querySelector('aside').addEventListener('change', function (e) {
+    if (e.target.id === 'offerslot') { E.shopById(S, selected.id)._offer = e.target.checked; renderSel(); }
+    if (e.target.id === 'netprice') {
+      var v = Math.max(50, Math.round(+e.target.value || 0));
+      if (!S.params.price.byNetwork) S.params.price.byNetwork = { ph: 0, ki: 0 };
+      E.setParam(S, e.target.dataset.path, v); autosave(); renderAll();
+    }
+  });
+
+  // ---------- modals ----------
+  function modalOpen() { return $('modal-bg').classList.contains('open'); }
+  function openModal(html, wide) {
+    var m = $('modal'); m.className = 'modal' + (wide ? ' wide' : ''); m.innerHTML = html;
+    $('modal-bg').classList.add('open');
+    var f = m.querySelector('input, select, button.primary'); if (f) f.focus();
+  }
+  function closeModal() { $('modal-bg').classList.remove('open'); $('modal').innerHTML = ''; }
+  $('modal-bg').addEventListener('mousedown', function (e) { if (e.target === $('modal-bg') && S) closeModal(); });
+
+  function startModal() {
+    var saved = readAutosave();
+    openModal('<h2>New game</h2><p class="lede">Set your starting money and credit. Purchases and losses use cash first, then the credit line (interest on what you use). The plan needs about ₹1,17,800 to launch 10 screens.</p>' +
+      '<div class="grid2">' +
+      field('Starting money (₹)', '<input type="number" id="stMoney" value="117800" step="1000">', 'Your savings put into Haspot') +
+      field('Credit limit (₹)', '<input type="number" id="stCredit" value="100000" step="5000">', 'Suggested ₹1,00,000') +
+      field('Monthly salary top-up (₹)', '<input type="number" id="stTopup" value="40000" step="5000">', 'Added each month for the first 12 months') +
+      field('Credit interest per month', '<input type="number" id="stRate" value="0.015" step="0.001">', '0.015 = 1.5% a month on credit used') +
+      field('Start with', '<select id="stSetup"><option value="empty">Empty map: you pitch and install</option><option value="plan">Plan kit: 10 pharmacy screens, 5 founders, spares</option></select>', '') +
+      field('Seed', '<input type="number" id="stSeed" value="' + (1 + Math.floor(Math.random() * 9999)) + '">', 'Same seed = same story') +
+      '</div><div id="stMsg"></div><div class="row" style="margin-top:10px"><label><input type="checkbox" id="stAuto"> Auto-expand by the plan rules (otherwise you expand by hand; the HUD shows when a gate is met)</label></div>' +
+      '<div class="foot">' + (saved ? '<button data-m="resume">Resume autosave (month ' + saved.month + ')</button>' : '') +
+      '<button data-m="scen">Pick a scenario instead</button><button class="primary" data-m="start">Start</button></div>');
+    bindModal({
+      start: function () {
+        var p = E.makeParams({ start: { money: +$('stMoney').value, creditLimit: +$('stCredit').value, creditInterestMonthly: +$('stRate').value, setup: $('stSetup').value },
+          growth: { salaryTopup: +$('stTopup').value, autoExpand: $('stAuto').checked } });
+        var seed = +$('stSeed').value || 1;
+        var e = E.effective(p), need = e.start.setup === 'plan' ? E.kitCost(e, e.infra.player) * e.start.setupScreens + e.start.spareTVs * e.kit.tv + e.start.spareHotspots * e.kit.hotspot + e.start.tripCost - e.start.setupFounders * e.price.founding * e.start.setupScreens * e.price.foundingPrepaidMonths : 0;
+        if (need > e.start.money + e.start.creditLimit) { $('stMsg').className = 'msg bad'; $('stMsg').textContent = 'The plan kit needs ' + fmt(need) + ' up front; money plus credit is only ' + fmt(e.start.money + e.start.creditLimit) + '.'; return; }
+        closeModal(); startGame(E.newGame(p, { seed: seed }));
+      },
+      resume: function () { closeModal(); startGame(saved); },
+      scen: function () { scenarioModal(); }
+    });
+  }
+  function field(label, input, note) { return '<div class="field"><label>' + label + '</label>' + input + (note ? '<div class="note">' + note + '</div>' : '') + '</div>'; }
+  function bindModal(handlers) {
+    $('modal').querySelectorAll('[data-m]').forEach(function (b) {
+      b.addEventListener('click', function () { var h = handlers[b.dataset.m]; if (h) h(b); });
+    });
+  }
+
+  function scenarioModal() {
+    openModal('<h2>Scenarios</h2><p class="lede">Each preset is a set of overrides on the business-plan defaults. Loading one starts a fresh game with that preset (auto-expand on), so you can watch it play out or run it to a month.</p>' +
+      '<div class="presets">' + E.PRESETS.map(function (pr) {
+        return '<div class="preset"><b>' + pr.id + ' · ' + esc(pr.name) + '</b><span>' + esc(pr.question) + '</span>' +
+          '<div class="actions" style="margin-top:2px"><button class="primary" data-m="load" data-id="' + pr.id + '">Load</button><button data-m="mc" data-id="' + pr.id + '">Monte Carlo</button></div></div>';
+      }).join('') + '</div><div class="foot"><button data-m="close">Close</button></div>', true);
+    bindModal({
+      load: function (b) { var pr = E.presetById(b.dataset.id); closeModal(); startGame(E.newGame(E.presetParams(pr.id), { seed: pr.seed })); S.presetId = pr.id; renderAll(); },
+      mc: function (b) { mcModal(b.dataset.id); },
+      close: function () { if (S) closeModal(); else startModal(); }
+    });
+  }
+
+  // Config schema: [path, label, kind, note, assumption]
+  var SCHEMA = [
+    ['Money and costs', [
+      ['kit.tv', '32" Android TV', 'n', 'Intex LED-SHF32102, ₹9,299 rounded up'], ['kit.hotspot', 'JioFi hotspot', 'n'], ['kit.power', 'Timer socket + spike guard', 'n'], ['kit.fitting', 'Mount, cables, QR sticker', 'n'],
+      ['opex.hostFee', 'Host fee / screen / mo', 'n'], ['opex.hostPayFollowsUptime', 'Host pay follows uptime', 'b', 'Halves unplug risk'],
+      ['opex.reserve', 'Hardware reserve / screen / mo', 'n'], ['opex.licenceY1', 'Signage licence, year 1', 'n'], ['opex.licenceY2', 'Signage licence, year 2+', 'n'],
+      ['opex.data', 'Mobile data / screen / mo', 'n'], ['opex.freeLicences', 'Free licences', 'n', 'Ignored in plan mode'], ['feeRate', 'Gateway fee rate', 'n', '2% + 0.99% + 18% GST'],
+      ['fixedBase', 'Fixed costs / mo', 'n', 'Travel, tools, CA'], ['hubPer15', 'Hub-shop fee per 15 screens', 'n'],
+      ['start.creditLimit', 'Credit limit', 'n'], ['start.creditInterestMonthly', 'Credit interest / mo', 'n'],
+      ['growth.salaryTopup', 'Salary top-up / mo', 'n'], ['growth.topupMonths', 'Top-up months', 'n']]],
+    ['Slots and pricing', [
+      ['loop.sellable', 'Sellable slots per loop', 'n', '12 slots minus host and house'], ['loop.openHours', 'Open hours / day', 'n'],
+      ['price.list', 'List price ₹ / screen / slot / mo', 'n'], ['price.founding', 'Founding price', 'n'], ['price.foundingCount', 'Founding advertisers', 'n'],
+      ['price.foundingMonths', 'Founding lock (months)', 'n'], ['price.foundingPrepaidMonths', 'Founding prepaid months', 'n'], ['price.halfSlot', 'Half-slot price', 'n']]],
+    ['Demand', [
+      ['demand.arrivalsPerNetwork', 'New advertisers / network / mo', 'n', 'Poisson mean at list price', 1], ['demand.elasticity', 'Price elasticity', 'n', '', 1],
+      ['demand.networkSizeBoost', 'Extra arrivals per 10 screens', 'n', '', 1], ['demand.churnMonthly', 'Churn / mo with reports', 'n', '', 1],
+      ['demand.churnNoReports', 'Churn / mo without reports', 'n', '', 1], ['demand.reports', 'Send monthly reports', 'b', '', 1],
+      ['demand.makeGood', 'Refund dark days (make-good)', 'b', '', 1], ['demand.halfShare', 'Share buying half slots', 'n', '', 1],
+      ['demand.targetSold', 'Cap on open slots sold', 'n', '0 = no cap', 1], ['demand.fixedArrivals', 'Fixed arrivals', 'n', '-1 = random', 1],
+      ['demand.shockFromMonth', 'Bad-year shock from month', 'n', '0 = off', 1], ['demand.shockArrivalsMult', 'Shock: arrivals ×', 'n', '', 1], ['demand.shockChurnMult', 'Shock: churn ×', 'n', '', 1]]],
+    ['Anchor leases', [
+      ['anchors.enabled', 'Anchor leases on', 'b'], ['anchors.slotsPerNetwork', 'Slots reserved for anchors', 'n'], ['anchors.price', 'Anchor price ₹ / screen / slot / mo', 'n'],
+      ['anchors.termMonths', 'Default term (months)', 'n'], ['anchors.billing', 'Default billing', 's', '', 0, ['quarterly', 'annual']], ['anchors.annualDiscount', 'Annual upfront discount', 'n'],
+      ['anchors.maxSlotsPerClient', 'Max slots per client', 'n'], ['anchors.pitchSuccess', 'Pitch success', 'n', '', 1], ['anchors.exclusivityBonus', 'Exclusivity bonus', 'n', '', 1],
+      ['anchors.renewProb', 'Renewal probability', 'n', '', 1], ['anchors.seasonalWeighting', 'Seasonal weighting (schools/coaching)', 'b'],
+      ['anchors.feeRate', 'Anchor gateway fee', 'n', 'Bank transfer'], ['anchors.tdsRate', 'TDS rate', 'n', 'Recovered yearly from month 15'], ['anchors.autoPitchPerMonth', 'Auto pitches / network / mo', 'n', 'Auto-expand only']]],
+    ['Growth rules', [
+      ['growth.autoExpand', 'Auto-expand', 'b', 'Off: you expand by hand'], ['growth.expandWhenSold', 'Expand when slots sold ≥', 'n'], ['growth.batch', 'Screens per step', 'n'],
+      ['growth.maxPerNetwork', 'Max screens per network', 'n'], ['growth.kiranaLaunchWhenPharmacyScreens', 'Kirana launches at pharmacy screens', 'n'],
+      ['growth.preferZone', 'Prefer hosts in zone', 's', '', 0, [''].concat(E.ZONES.map(function (z) { return z.id; }))],
+      ['hostPitch.success', 'Host pitch success', 'n', '', 1], ['hostPitch.hostSlotBonus', 'Bonus for offering host slot', 'n', '', 1], ['hostPitch.cooldownMonths', 'Cooldown after a no', 'n']]],
+    ['Events', [
+      ['events.tvFailMonthly', 'TV failure / screen / mo', 'n', '', 1], ['events.hotspotFailMonthly', 'Hotspot failure / screen / mo', 'n', '', 1],
+      ['events.unplugMonthly', 'Host unplugs / screen / mo', 'n', '', 1], ['events.powerCutDaysMonthly', 'Power-cut days / mo (× zone)', 'n', '', 1],
+      ['events.restartFailProb', 'Restart fails after a cut', 'n', '0 = TV passed the test, 0.3 untested', 1], ['events.hostQuitMonthly', 'Host quits / mo', 'n', '', 1],
+      ['events.adRuleBreach', 'Ad rule breach / ad / mo', 'n', '', 1], ['events.spareSwapDays', 'Dark days with a spare', 'n', '', 1], ['events.noSpareSwapDays', 'Dark days with no spare', 'n', '', 1]]],
+    ['Infra choices', [
+      ['infra.player', 'Default player', 's', '', 0, ['androidTV', 'pi']], ['infra.connectivity', 'Default connectivity', 's', '', 0, ['own4G', 'shopWifi', 'sharedHotspot']],
+      ['infra.cms', 'Signage software', 's', '', 0, ['cloud', 'selfHosted']], ['infra.cmsSwitchMonth', 'Self-hosted from month', 'n'], ['infra.piExtra', 'Pi extra capex', 'n'],
+      ['infra.vpsMonthly', 'VPS / mo (self-hosted)', 'n'], ['infra.selfHostedNeedsLicence', 'Self-hosted still needs licences', 'b', 'Check with PiSignage'],
+      ['infra.shopWifiHostFeeExtra', 'Extra host fee for shop Wi-Fi', 'n'], ['infra.sharedRange', 'Shared hotspot range (tiles)', 'n']]],
+    ['Founder time (minutes)', [
+      ['founder.approveAd', 'Approve an ad', 'n'], ['founder.swap', 'Arrange a swap', 'n'], ['founder.closeBase', 'Monthly close, base', 'n'], ['founder.closePerScreen', 'Monthly close, per screen', 'n'],
+      ['founder.appsScript', 'Apps Script automation on', 'b', 'Halves the close'], ['founder.weeklyReview', 'Weekly review', 'n'], ['founder.anchorAccount', 'Per anchor per month', 'n'], ['founder.pitch', 'Each pitch', 'n']]],
+    ['Classic rules (P0)', [['classic.revenuePerScreen', 'Revenue / screen / mo', 'n'], ['classic.expensePerScreen', 'Expense / screen / mo', 'n']]]
+  ];
+  function getPath(o, path) { return path.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); }
+
+  function configModal() {
+    if (!S) return;
+    var html = '<h2>Config</h2><p class="lede">Every parameter of the model. Changes take effect next month and are written to the event log. Items marked <span class="assume">assumption</span> are guesses to calibrate after the pilot.' +
+      (P().mode === 'plan' ? ' <b>Plan mode is on:</b> events and random draws are switched off whatever you set here.' : '') + '</p><div class="cfg-cols">';
+    SCHEMA.forEach(function (g) {
+      html += '<fieldset><legend>' + g[0] + (g[0] === 'Demand' || g[0] === 'Events' ? '<span class="assume">assumption</span>' : '') + '</legend>';
+      g[1].forEach(function (f) {
+        var v = getPath(S.params, f[0]), id = 'cfg_' + f[0].replace(/\./g, '_'), input;
+        if (f[2] === 'b') input = '<input type="checkbox" id="' + id + '"' + (v ? ' checked' : '') + '>';
+        else if (f[2] === 's') input = '<select id="' + id + '">' + f[5].map(function (o) { return '<option value="' + o + '"' + (o === v ? ' selected' : '') + '>' + (o || '(none)') + '</option>'; }).join('') + '</select>';
+        else input = '<input type="number" id="' + id + '" step="any" value="' + v + '">';
+        html += '<div class="cfg-row"><label class="lbl" for="' + id + '">' + f[1] + (f[4] ? '<span class="assume">assumption</span>' : '') + (f[3] ? '<small>' + f[3] + '</small>' : '') + '</label>' + input + '</div>';
+      });
+      html += '</fieldset>';
+    });
+    html += '</div><div class="foot"><button data-m="reset">Reset to plan</button><button data-m="cancel">Cancel</button><button class="primary" data-m="apply">Apply</button></div>';
+    openModal(html, true);
+    bindModal({
+      reset: function () {
+        SCHEMA.forEach(function (g) { g[1].forEach(function (f) {
+          var el = $('cfg_' + f[0].replace(/\./g, '_')), v = getPath(E.DEFAULTS, f[0]);
+          if (f[2] === 'b') el.checked = !!v; else el.value = v;
+        }); });
+      },
+      cancel: closeModal,
+      apply: function () {
+        var n = 0;
+        SCHEMA.forEach(function (g) { g[1].forEach(function (f) {
+          var el = $('cfg_' + f[0].replace(/\./g, '_')), v;
+          if (f[2] === 'b') v = el.checked; else if (f[2] === 's') v = el.value; else { v = Number(el.value); if (!isFinite(v)) return; }
+          if (JSON.stringify(v) !== JSON.stringify(getPath(S.params, f[0]))) { E.setParam(S, f[0], v); n++; }
+        }); });
+        closeModal(); autosave(); renderAll();
+      }
+    });
+  }
+
+  function anchorModal(instId) {
+    var inst = E.instById(S, instId), p = P();
+    var seasonalOK = inst.category === 'school' || inst.category === 'coaching';
+    openModal('<h2>Anchor lease · ' + esc(inst.name) + '</h2><p class="lede">' + cap(inst.category) + ' · budget ' + fmt(inst.budgetMonthly) + ' a month. Price ' + fmt(p.anchors.price) +
+      ' per screen per slot per month, ' + Math.round(p.anchors.annualDiscount * 100) + '% off if billed annually. Paid by bank transfer, less ' + (p.anchors.tdsRate * 100) + '% TDS (recovered after filing).</p>' +
+      '<div class="grid2">' +
+      field('Network', '<select id="anNet"><option value="ph">Pharmacy</option><option value="ki">Kirana</option></select>', '') +
+      field('Slots', '<select id="anSlots">' + Array.from({ length: p.anchors.maxSlotsPerClient }, function (_, i) { return '<option>' + (i + 1) + '</option>'; }).join('') + '</select>', 'Capped at ' + p.anchors.maxSlotsPerClient + ' per client') +
+      field('Term', '<select id="anTerm"><option value="6">6 months</option><option value="12" selected>12 months</option></select>', '') +
+      field('Billing', '<select id="anBill"><option value="quarterly">Quarterly in advance</option><option value="annual">Annual upfront</option></select>', '') +
+      field('Exclusivity', '<label><input type="checkbox" id="anEx"> one ' + inst.category + ' per network (+' + Math.round(p.anchors.exclusivityBonus * 100) + '% success)</label>', '') +
+      field('Seasonal weighting', '<label><input type="checkbox" id="anSeas"' + (seasonalOK && p.anchors.seasonalWeighting ? ' checked' : '') + (seasonalOK ? '' : ' disabled') + '> 2 slots in peak months, 1 otherwise, same price</label>', seasonalOK ? '' : 'Schools and coaching only') +
+      '</div><div id="anQuote" class="msg"></div><div class="foot"><button data-m="cancel">Cancel</button><button class="primary" data-m="pitch">Pitch (30 min of your time)</button></div>');
+    $('anNet').value = S.screens.some(function (x) { return x.network === 'ph'; }) ? 'ph' : 'ki';
+    function quote() {
+      var f = form(), price = p.anchors.price * (f.billing === 'annual' ? 1 - p.anchors.annualDiscount : 1);
+      var n = Math.max(1, S.screens.filter(function (x) { return x.network === f.network; }).length);
+      var why = E.anchorCheck(S, instId, f);
+      var chance = p.anchors.pitchSuccess + (f.exclusive ? p.anchors.exclusivityBonus : 0);
+      $('anQuote').className = 'msg' + (why ? ' bad' : '');
+      $('anQuote').textContent = why ? why : 'Quote: ' + fmt(price * f.slots * n) + ' a month for ' + n + ' screens · success chance ' + Math.round(chance * 100) + '%.';
+      $('modal').querySelector('[data-m=pitch]').disabled = !!why;
+    }
+    function form() { return { network: $('anNet').value, slots: +$('anSlots').value, termMonths: +$('anTerm').value, billing: $('anBill').value, exclusive: $('anEx').checked, seasonal: $('anSeas').checked }; }
+    $('modal').querySelectorAll('input, select').forEach(function (el) { el.addEventListener('change', quote); }); quote();
+    bindModal({
+      cancel: closeModal,
+      pitch: function () {
+        var r = E.pitchAnchor(S, instId, form());
+        selMsg = r.ok ? { cls: 'good', text: 'Lease signed. It starts next month and is billed in advance.' } : { cls: 'bad', text: r.reason };
+        closeModal(); autosave(); renderAll();
+      }
+    });
+  }
+
+  function jumpModal() {
+    var target = Math.max(S.month + 1, 18);
+    openModal('<h2>Jump to month</h2><p class="lede">Runs month by month at full speed. Stops early if the business goes insolvent.</p>' +
+      field('Month', '<input type="number" id="jumpN" min="' + (S.month + 1) + '" value="' + target + '">', '') +
+      '<div class="foot"><button data-m="cancel">Cancel</button><button class="primary" data-m="go">Run</button></div>');
+    $('jumpN').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    function go() { var n = Math.min(240, +$('jumpN').value || 0); closeModal(); while (S.month < n && !S.insolvent) doTick(); setSpeed(0); renderAll(); }
+    bindModal({ cancel: closeModal, go: go });
+  }
+
+  // ---------- charts (inline SVG) ----------
+  function chart(opts) {
+    var w = opts.w || 680, h = opts.h || 230, L = 64, R = 12, Tm = 12, B = 26;
+    var all = [0];
+    opts.series.forEach(function (s) { s.values.forEach(function (v) { if (v != null && isFinite(v)) all.push(v); }); });
+    (opts.bands || []).forEach(function (b) { b.lo.concat(b.hi).forEach(function (v) { if (v != null && isFinite(v)) all.push(v); }); });
+    var n = Math.max.apply(null, opts.series.map(function (s) { return s.values.length; }).concat([2]));
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    if (hi === lo) hi = lo + 1;
+    var step = niceStep((hi - lo) / 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    var X = function (i) { return L + (i / Math.max(1, n - 1)) * (w - L - R); };
+    var Y = function (v) { return Tm + (1 - (v - lo) / (hi - lo)) * (h - Tm - B); };
+    var out = '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(opts.title || 'chart') + '">';
+    for (var v = lo; v <= hi + 1e-9; v += step) {
+      out += '<line x1="' + L + '" x2="' + (w - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + (Math.abs(v) < 1e-9 ? '#14231F' : '#E1D6C1') + '" stroke-width="' + (Math.abs(v) < 1e-9 ? 1.2 : 1) + '"/>';
+      out += '<text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + compact(v) + '</text>';
+    }
+    for (var i = 0; i < n; i++) if ((i + 1) % 6 === 0 || i === 0) out += '<text x="' + X(i) + '" y="' + (h - 8) + '" text-anchor="middle">m' + (i + 1) + '</text>';
+    if (opts.refLine != null && opts.refLine >= lo && opts.refLine <= hi) out += '<line x1="' + L + '" x2="' + (w - R) + '" y1="' + Y(opts.refLine) + '" y2="' + Y(opts.refLine) + '" stroke="#2F7D4F" stroke-dasharray="4 4"/><text x="' + (w - R) + '" y="' + (Y(opts.refLine) - 4) + '" text-anchor="end" style="fill:#2F7D4F">₹1 lakh net</text>';
+    (opts.bands || []).forEach(function (b) {
+      var pts = [];
+      b.hi.forEach(function (v, i) { if (v != null && isFinite(v)) pts.push(X(i) + ',' + Y(v)); });
+      for (var k = b.lo.length - 1; k >= 0; k--) if (b.lo[k] != null && isFinite(b.lo[k])) pts.push(X(k) + ',' + Y(b.lo[k]));
+      out += '<polygon points="' + pts.join(' ') + '" fill="' + b.color + '" opacity="0.28"/>';
+    });
+    opts.series.forEach(function (s) {
+      var d = '';
+      s.values.forEach(function (v, i) { if (v == null || !isFinite(v)) return; d += (d ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); });
+      out += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2.2"' + (s.dash ? ' stroke-dasharray="6 4"' : '') + '/>';
+    });
+    return out + '</svg>';
+  }
+  function niceStep(raw) { var p = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-9)))), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+  function legend(items) { return '<div class="legendrow">' + items.map(function (it) { return '<span><i style="background:' + it[1] + (it[2] ? ';background:repeating-linear-gradient(90deg,' + it[1] + ' 0 5px,transparent 5px 8px)' : '') + '"></i>' + esc(it[0]) + '</span>'; }).join('') + '</div>'; }
+
+  function ledgerTable(ledger) {
+    var cols = E.LEDGER_COLUMNS;
+    return '<div class="tablewrap"><table class="data"><thead><tr>' + cols.map(function (c) { return '<th>' + c.replace(/_/g, ' ') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      ledger.map(function (r) {
+        return '<tr>' + cols.map(function (c) {
+          var v = r[c], money = ['revenue', 'gateway_fees', 'host_fees', 'reserve', 'licences', 'data', 'fixed', 'interest', 'profit', 'cash', 'credit_used'].indexOf(c) >= 0;
+          return '<td class="' + (money && v < 0 ? 'neg' : '') + '">' + (money ? Math.round(v).toLocaleString('en-IN') : v) + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function ledgerModal(imported) {
+    var L = imported || S.ledger;
+    var same = imported ? JSON.stringify(imported) === JSON.stringify(E.csvToLedger(E.ledgerToCSV(S.ledger))) : null;
+    openModal('<h2>' + (imported ? 'Imported ledger' : 'Ledger & charts') + '</h2>' +
+      (imported ? '<div class="msg ' + (same ? 'good' : '') + '">' + (same ? 'This CSV matches the current game\'s ledger row for row.' : 'Showing the imported CSV (it differs from the current game).') + '</div>' : '<p class="lede">One row per month. CSV columns are in the order the plan specifies.</p>') +
+      (L.length ? chart({ title: 'Cash and net profit by month', series: [{ values: L.map(function (r) { return r.cash; }), color: '#14231F' }, { values: L.map(function (r) { return r.profit; }), color: '#E9A23B' }], refLine: 100000 }) +
+        legend([['Cash (negative = credit used)', '#14231F'], ['Net profit / mo', '#E9A23B']]) + ledgerTable(L) : '<p class="empty">No months played yet. Press N to advance one month.</p>') +
+      '<div class="foot"><button data-m="import">Import CSV…</button><button data-m="csv"' + (S.ledger.length ? '' : ' disabled') + '>Export CSV</button><button class="primary" data-m="close">Close</button></div>', true);
+    bindModal({ close: closeModal, csv: function () { download('haspot-ledger-seed' + S.seed + '-m' + S.month + '.csv', E.ledgerToCSV(S.ledger), 'text/csv'); }, import: function () { pickFile(); } });
+  }
+
+  function gameOverModal() {
+    openModal('<h2 style="color:var(--terracotta)">Insolvent in month ' + S.insolvent.month + '</h2><p class="lede">' + esc(S.insolvent.cause) + '</p>' +
+      chart({ title: 'Cash and net profit', series: [{ values: S.ledger.map(function (r) { return r.cash; }), color: '#14231F' }, { values: S.ledger.map(function (r) { return r.profit; }), color: '#B5523B' }] }) +
+      legend([['Cash', '#14231F'], ['Net profit / mo', '#B5523B']]) + ledgerTable(S.ledger) +
+      '<div class="foot"><button data-m="csv">Export CSV</button><button data-m="view">Look at the map</button><button class="primary" data-m="new">New game</button></div>', true);
+    bindModal({ csv: function () { download('haspot-ledger-insolvent.csv', E.ledgerToCSV(S.ledger), 'text/csv'); }, view: closeModal, new: startModal });
+  }
+
+  function sourceOptions(sel) {
+    return '<option value="current"' + (sel === 'current' ? ' selected' : '') + '>Current game\'s settings</option>' +
+      E.PRESETS.map(function (pr) { return '<option value="' + pr.id + '"' + (sel === pr.id ? ' selected' : '') + '>' + pr.id + ' · ' + esc(pr.name) + '</option>'; }).join('');
+  }
+  function sourceParams(v) { return v === 'current' ? E.clone(S.params) : E.presetParams(v); }
+  function sourceName(v) { return v === 'current' ? 'Current game' : v + ' · ' + E.presetById(v).name; }
+
+  function mcStats(mc) {
+    return [
+      ['P(net ≥ ₹1 lakh by month 18)', pct(mc.pLakhBy18)], ['P(by month 24)', pct(mc.pLakhBy24)],
+      ['Median month to ₹1 lakh', mc.medianMonthToLakh == null ? 'not reached' : 'month ' + Math.round(mc.medianMonthToLakh)],
+      ['5th-percentile lowest cash', fmt(mc.p5LowestCash)], ['P(credit limit breached)', pct(mc.pCreditBreached)],
+      ['Median founder hours / week at m24', mc.medianHoursAt24 == null ? '—' : mc.medianHoursAt24.toFixed(1)]
+    ];
+  }
+  function mcModal(preset) {
+    var src = preset || 'current';
+    openModal('<h2>Monte Carlo</h2><p class="lede">Runs the scenario many times with seeds seed, seed+1, … at instant speed and reports the odds. Starts from month 0 of the scenario.</p>' +
+      '<div class="row"><label>Scenario</label><select id="mcSrc">' + sourceOptions(src) + '</select><label>Runs</label><input type="number" id="mcRuns" value="500" min="10" max="5000"><label>Months</label><input type="number" id="mcMonths" value="36" min="6" max="120"><label>Seed</label><input type="number" id="mcSeed" value="1"></div>' +
+      '<div class="row"><label><input type="checkbox" id="mcAuto" checked> Auto-expand by the plan rules during runs</label></div>' +
+      '<div id="mcOut"><p class="empty">Press Run.</p></div><div class="foot"><button data-m="close">Close</button><button class="primary" data-m="run">Run</button></div>', true);
+    bindModal({
+      close: closeModal,
+      run: function () {
+        $('mcOut').innerHTML = '<p class="empty">Running…</p>';
+        setTimeout(function () {
+          var p = sourceParams($('mcSrc').value);
+          if ($('mcAuto').checked) p.growth.autoExpand = true;
+          var t0 = performance.now();
+          var mc = E.monteCarlo(p, { runs: +$('mcRuns').value || 500, months: +$('mcMonths').value || 36, seed: +$('mcSeed').value || 1, worldSeed: S ? S.worldSeed : 7 });
+          var ms = Math.round(performance.now() - t0);
+          var warn = p.start.setup === 'empty' && !(E.effective(p).mode === 'classic') ? '<div class="msg">This scenario starts with an empty map, so auto-expand has nothing to grow from. Pick a preset or start a game with the plan kit.</div>' : '';
+          $('mcOut').innerHTML = warn + '<div class="stats">' + mcStats(mc).map(function (s) { return '<div class="stat"><div class="k">' + s[0] + '</div><div class="v">' + s[1] + '</div></div>'; }).join('') + '</div>' +
+            '<div class="loopkey">' + mc.runs + ' runs × ' + mc.months + ' months in ' + ms + ' ms.</div>' +
+            '<h3 style="margin:10px 0 2px">Net profit by month</h3>' +
+            chart({ title: 'Monte Carlo fan of net profit', series: [{ values: mc.fan.map(function (f) { return f.p50; }), color: '#8A5A0B' }], bands: [{ lo: mc.fan.map(function (f) { return f.p10; }), hi: mc.fan.map(function (f) { return f.p90; }), color: '#E9A23B' }], refLine: 100000 }) +
+            legend([['Median', '#8A5A0B'], ['10th–90th percentile', '#E9A23B']]) +
+            '<h3 style="margin:10px 0 2px">Cash by month</h3>' +
+            chart({ title: 'Monte Carlo fan of cash', h: 190, series: [{ values: mc.cashFan.map(function (f) { return f.p50; }), color: '#14231F' }], bands: [{ lo: mc.cashFan.map(function (f) { return f.p10; }), hi: mc.cashFan.map(function (f) { return f.p90; }), color: '#5B6863' }] }) +
+            legend([['Median cash', '#14231F'], ['10th–90th percentile', '#5B6863']]);
+        }, 20);
+      }
+    });
+  }
+
+  function compareModal() {
+    openModal('<h2>Compare</h2><p class="lede">Runs both scenarios as Monte Carlo batches and plots the median cash and net profit over the months, with the odds side by side.</p>' +
+      '<div class="row"><label>A</label><select id="cmpA">' + sourceOptions('P3') + '</select><label>B</label><select id="cmpB">' + sourceOptions('P4') + '</select>' +
+      '<label>Runs</label><input type="number" id="cmpRuns" value="500"><label>Months</label><input type="number" id="cmpMonths" value="36"></div>' +
+      '<div id="cmpOut"><p class="empty">Press Run.</p></div><div class="foot"><button data-m="close">Close</button><button class="primary" data-m="run">Run</button></div>', true);
+    bindModal({
+      close: closeModal,
+      run: function () {
+        $('cmpOut').innerHTML = '<p class="empty">Running…</p>';
+        setTimeout(function () {
+          var a = $('cmpA').value, b = $('cmpB').value, runs = +$('cmpRuns').value || 500, months = +$('cmpMonths').value || 36;
+          var pa = sourceParams(a), pb = sourceParams(b); pa.growth.autoExpand = true; pb.growth.autoExpand = true;
+          var ws = S ? S.worldSeed : 7;
+          var A = E.monteCarlo(pa, { runs: runs, months: months, worldSeed: ws }), B = E.monteCarlo(pb, { runs: runs, months: months, worldSeed: ws });
+          var sa = mcStats(A), sb = mcStats(B);
+          $('cmpOut').innerHTML =
+            '<h3 style="margin:6px 0 2px">Net profit by month (median)</h3>' +
+            chart({ title: 'Net profit, A vs B', series: [{ values: A.fan.map(function (f) { return f.p50; }), color: '#14231F' }, { values: B.fan.map(function (f) { return f.p50; }), color: '#B5523B', dash: true }], refLine: 100000 }) +
+            legend([['A: ' + sourceName(a), '#14231F'], ['B: ' + sourceName(b), '#B5523B', true]]) +
+            '<h3 style="margin:10px 0 2px">Cash by month (median)</h3>' +
+            chart({ title: 'Cash, A vs B', h: 190, series: [{ values: A.cashFan.map(function (f) { return f.p50; }), color: '#14231F' }, { values: B.cashFan.map(function (f) { return f.p50; }), color: '#B5523B', dash: true }] }) +
+            '<div class="grid2" style="margin-top:10px">' + [[a, sa], [b, sb]].map(function (x, k) {
+              return '<div><h3 style="margin:0 0 4px">' + (k ? 'B' : 'A') + ': ' + esc(sourceName(x[0])) + '</h3><table class="data"><tbody>' + x[1].map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table></div>';
+            }).join('') + '</div>';
+        }, 20);
+      }
+    });
+  }
+
+  function helpModal() {
+    openModal('<h2>How to play</h2><p class="lede">Haspot Sim turns the business plan into a map. Place screens in shops, sell 10-second slots, and watch cash, profit, risk and your own hours.</p>' +
+      '<ol><li>Click a pale <b>pharmacy</b> (teal) or <b>kirana</b> (brown) and <b>Pitch host</b>. Offering the host slot raises the odds.</li>' +
+      '<li>When a shop says yes, <b>Install screen</b>. It pays the kit cost now and goes live next month.</li>' +
+      '<li>Advertisers arrive month by month once a network has live screens. The first five are founders at ₹300, three months prepaid.</li>' +
+      '<li>Mark one host as the <b>hub shop</b> and buy spares: a spare TV turns a 10-day outage into 2 days.</li>' +
+      '<li>Hospitals (H), schools (S), coaching (C) and labs (L) take <b>anchor leases</b> (turn them on in Config).</li>' +
+      '<li>Watch the gate chips: when a network has 7 of 10 slots sold, it is time to add screens.</li></ol>' +
+      '<p><span class="kbd">Space</span> pause / play · <span class="kbd">1</span> real time (1 minute = 1 month) · <span class="kbd">2</span> 1 month / 5 s · <span class="kbd">3</span> 1 month / s · <span class="kbd">4</span> jump to month N · <span class="kbd">N</span> next month · <span class="kbd">C</span> config · <span class="kbd">Esc</span> close. Drag to pan, scroll to zoom.</p>' +
+      '<p class="loopkey">Everything runs in this file, offline. Your game autosaves in this browser; use Save for a file you can keep.</p>' +
+      '<div class="foot"><button class="primary" data-m="close">Close</button></div>');
+    bindModal({ close: closeModal });
+  }
+
+  // ---------- files ----------
+  function download(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function pickFile() { $('filein').value = ''; $('filein').click(); }
+  $('filein').addEventListener('change', function () {
+    var f = this.files[0]; if (!f) return;
+    f.text().then(function (txt) {
+      try {
+        if (/\.csv$/i.test(f.name) || /^month,/.test(txt)) { ledgerModal(E.csvToLedger(txt)); return; }
+        var st = E.importState(txt); closeModal(); startGame(st);
+        S.log.unshift({ month: S.month, text: 'Loaded ' + f.name + '.', kind: 'info' }); renderAll();
+      } catch (e) { alert('Could not read that file: ' + e.message); }
+    });
+  });
+
+  // ---------- toolbar, speed, keys ----------
+  document.querySelector('.toolbar').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var a = b.dataset.act;
+    if (a === 'new') startModal();
+    if (a === 'scenarios') scenarioModal();
+    if (!S) return;
+    if (a === 'config') configModal();
+    if (a === 'ledger') ledgerModal();
+    if (a === 'mc') mcModal(S.presetId || 'current');
+    if (a === 'compare') compareModal();
+    if (a === 'save') download('haspot-save-seed' + S.seed + '-m' + S.month + '.json', E.exportState(S), 'application/json');
+    if (a === 'load') pickFile();
+    if (a === 'help') helpModal();
+  });
+  $('speedbox').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || !S) return;
+    if (b.id === 'nextbtn') { doTick(); renderAll(); return; }
+    setSpeed(+b.dataset.speed);
+  });
+  var lastSpeed = 1;
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modalOpen() && S) { closeModal(); return; }
+    if (modalOpen() || !S) return;
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === ' ') { e.preventDefault(); if (speed) { lastSpeed = speed; setSpeed(0); } else setSpeed(S.insolvent ? 0 : lastSpeed); }
+    else if (e.key >= '1' && e.key <= '4') setSpeed(+e.key);
+    else if (e.key === 'n' || e.key === 'N') { doTick(); renderAll(); }
+    else if (e.key === 'c' || e.key === 'C') configModal();
+  });
+
+  // ---------- boot ----------
+  resize();
+  requestAnimationFrame(frame);
+  startModal();
+  // a game is needed behind the start modal so the map is not blank
+  S = E.newGame(E.makeParams({ start: { setup: 'empty' }, growth: { autoExpand: false } }), { seed: 1 });
+  fitView(); renderAll();
+  window.HaspotUI = { get state() { return S; }, tick: function () { doTick(); renderAll(); }, startGame: startGame };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "id": "P8",
+  "name": "No top-ups",
+  "seed": 1,
+  "question": "Growth funded only by the business",
+  "overrides": {
+    "growth": {
+      "salaryTopup": 0
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "P0",
+  "name": "Classic",
+  "seed": 1,
+  "question": "The original toy rules",
+  "overrides": {
+    "mode": "classic",
+    "start": {
+      "money": 100000,
+      "creditLimit": 50000,
+      "setup": "empty"
+    },
+    "growth": {
+      "salaryTopup": 0,
+      "autoExpand": false
+    }
+  }
+}

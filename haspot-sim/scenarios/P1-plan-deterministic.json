@@ -1,0 +1,12 @@
+{
+  "id": "P1",
+  "name": "Plan, deterministic",
+  "seed": 1,
+  "question": "Reproduces the business plan exactly",
+  "overrides": {
+    "mode": "plan",
+    "start": {
+      "money": 0
+    }
+  }
+}

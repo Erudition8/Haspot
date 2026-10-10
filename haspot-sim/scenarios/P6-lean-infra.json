@@ -1,0 +1,13 @@
+{
+  "id": "P6",
+  "name": "Lean infra",
+  "seed": 1,
+  "question": "Do the savings beat the extra downtime and hours?",
+  "overrides": {
+    "infra": {
+      "connectivity": "shopWifi",
+      "cms": "selfHosted",
+      "cmsSwitchMonth": 13
+    }
+  }
+}

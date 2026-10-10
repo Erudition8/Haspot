@@ -1,0 +1,15 @@
+{
+  "id": "P5",
+  "name": "Infra stress",
+  "seed": 1,
+  "question": "What untested hardware costs",
+  "overrides": {
+    "growth": {
+      "preferZone": "godowlia"
+    },
+    "events": {
+      "restartFailProb": 0.3,
+      "hotspotFailMonthly": 0.04
+    }
+  }
+}

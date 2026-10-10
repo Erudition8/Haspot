@@ -1,0 +1,14 @@
+{
+  "id": "P3",
+  "name": "Anchor-led",
+  "seed": 1,
+  "question": "Is the floor worth the lower top line?",
+  "overrides": {
+    "anchors": {
+      "enabled": true,
+      "slotsPerNetwork": 5,
+      "price": 450,
+      "billing": "quarterly"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "P7",
+  "name": "Fast sales",
+  "seed": 1,
+  "question": "Upside case",
+  "overrides": {
+    "demand": {
+      "arrivalsPerNetwork": 2
+    }
+  }
+}
