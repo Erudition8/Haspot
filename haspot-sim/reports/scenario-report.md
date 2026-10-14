@@ -1,6 +1,6 @@
 # Haspot Sim: scenario report
 
-Generated 2026-10-14 · 300 Monte Carlo runs per scenario · 36 months · 6 strategies × 5 economies = 30 scenarios.
+Generated 2026-10-14 · 300 Monte Carlo runs per scenario · 36 months · 6 strategies × 8 economies = 48 scenarios.
 
 Every run starts the same way the plan does: ₹1,17,800 put in, 10 pharmacy screens, 5 founding advertisers, spares, and growth by the plan's rules (expand at 7 of 10 slots sold, Kirana after 20 pharmacy screens, up to 21 per network). Demand and failure rates are the plan's assumptions until the pilot calibrates them, so treat the numbers as comparisons, not forecasts.
 
@@ -8,9 +8,9 @@ Every run starts the same way the plan does: ₹1,17,800 put in, 10 pharmacy scr
 
 2 slots per network for anchors (1 per client), 8 open monthly slots.
 
-- Average chance of ₹1 lakh net a month by month 24, across the five economies: **89%**
+- Average chance of ₹1 lakh net a month by month 24, across all 8 economies: **92%**
 - Worst economy for it: **Recession** (50%)
-- Best strategy in: Normal economy, Recession, Cost inflation, Tight money
+- Best strategy in: Normal economy, Recession, Cost inflation, Tight money, Bad year, then recovery, Price-sensitive market, Hardware trouble
 - Average chance of running out of credit: 0%
 
 ### Why this one
@@ -18,12 +18,12 @@ Every run starts the same way the plan does: ₹1,17,800 put in, 10 pharmacy scr
 - In a normal economy it reaches ₹1 lakh a month by month 14 in a typical run, with a 92% chance by month 18.
 - That is 2 months sooner than the plan's all-monthly model (77% by month 18).
 - It holds up best when budgets are cut: 50% chance of ₹1 lakh by month 24 in a recession, against 21% for all-monthly.
-- Runner-up overall: Lean infra (average score 116 vs 124).
+- Runner-up overall: Lean infra (average score 117 vs 126).
 
 ### Watch-outs
 
 - Premium price ₹600 earns more once the network is full (median ₹1,63,303 a month at month 36 vs ₹1,34,547). Once both networks sell out, test that move.
-- The worst case is a recession: only 50% chance of ₹1 lakh by month 24. If fewer than 4 slots per network are sold by month 6, slow expansion and push anchor and institution sales.
+- The worst case is a recession: only 50% chance of ₹1 lakh by month 24. If you are below the warning line in the checkpoints for two months running, hold off on the next batch of screens and push anchor and institution sales.
 - Anchor numbers are assumptions (25% of pitches sign, 70% renew). Check them on the first trip: if fewer than 1 in 6 institution meetings sign, fall back to all-monthly slots.
 - No run ran out of credit in any economy, but keep the credit line open through the expansion months.
 
@@ -45,25 +45,25 @@ At month 36: 42 screens, net ₹84,237 a month, cash ₹34,76,626, about 1.48 ho
 
 | # | Strategy | Avg score | Avg P(₹1L by m24) | Worst case | Wins |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Light anchors | 124 | 89% | 50% in Recession | 4 |
-| 2 | Lean infra | 116 | 83% | 30% in Recession | 0 |
-| 3 | Premium price ₹600 | 115 | 82% | 30% in Recession | 1 |
-| 4 | Monthly slots (the plan) | 111 | 80% | 21% in Recession | 0 |
-| 5 | Value price ₹400 | 85 | 61% | 0% in Cost inflation | 0 |
-| 6 | Anchor-led | 84 | 64% | 12% in Recession | 0 |
+| 1 | Light anchors | 126 | 92% | 50% in Recession | 7 |
+| 2 | Lean infra | 117 | 86% | 30% in Recession | 0 |
+| 3 | Premium price ₹600 | 115 | 83% | 30% in Recession | 1 |
+| 4 | Monthly slots (the plan) | 113 | 83% | 21% in Recession | 0 |
+| 5 | Value price ₹400 | 95 | 72% | 0% in Cost inflation | 0 |
+| 6 | Anchor-led | 86 | 67% | 12% in Recession | 0 |
 
 Score = 100 × P(₹1L by m24) + 30 × P(by m18) − 150 × P(out of credit) + median net at the last month ÷ ₹10,000 − 5 per founder hour a week above 4.
 
 ## P(₹1 lakh a month by month 24)
 
-| Strategy | Normal economy | Boom | Recession | Cost inflation | Tight money |
-| --- | --- | --- | --- | --- | --- |
-| Monthly slots (the plan) | 96% | 100% | 21% | 89% | 95% |
-| Anchor-led | 73% | 96% | 12% | 68% | 70% |
-| Light anchors | 100% | 100% | 50% | 99% | 98% |
-| Premium price ₹600 | 96% | 100% | 30% | 89% | 94% |
-| Value price ₹400 | 97% | 100% | 15% | 0% | 93% |
-| Lean infra | 97% | 100% | 30% | 94% | 95% |
+| Strategy | Normal economy | Boom | Recession | Cost inflation | Tight money | Bad year, then recovery | Price-sensitive market | Hardware trouble |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Monthly slots (the plan) | 96% | 100% | 21% | 89% | 95% | 75% | 96% | 94% |
+| Anchor-led | 73% | 96% | 12% | 68% | 70% | 74% | 73% | 65% |
+| Light anchors | 100% | 100% | 50% | 99% | 98% | 91% | 100% | 100% |
+| Premium price ₹600 | 96% | 100% | 30% | 89% | 94% | 77% | 86% | 94% |
+| Value price ₹400 | 97% | 100% | 15% | 0% | 93% | 81% | 100% | 89% |
+| Lean infra | 97% | 100% | 30% | 94% | 95% | 77% | 97% | 95% |
 
 ## Scenario report: Normal economy
 
@@ -139,4 +139,49 @@ Best strategy here: **Light anchors**.
 | Monthly slots (the plan) | 62% | 95% | 18 | ₹49,961 / ₹1,35,629 / ₹1,36,703 | ₹0 | 0% | 1.1 |
 | Value price ₹400 | 58% | 93% | 18 | ₹41,037 / ₹1,04,826 / ₹1,06,036 | ₹0 | 0% | 1.1 |
 | Anchor-led | 23% | 70% | 21 | ₹24,800 / ₹1,10,397 / ₹1,22,142 | −₹39 | 0% | 1.8 |
+
+## Scenario report: Bad year, then recovery
+
+From month 4 to month 15, half the usual new advertisers and twice the churn; normal after that.
+
+Best strategy here: **Light anchors**.
+
+| Strategy | P(₹1L by m18) | by m24 | Median month to ₹1L | Median net m12 / m24 / m36 | 5th-pct lowest cash | P(out of credit) | Hours/wk m24 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Light anchors | 39% | 91% | 19 | ₹43,462 / ₹1,32,604 / ₹1,34,515 | ₹0 | 0% | 1.4 |
+| Premium price ₹600 | 23% | 77% | 21 | ₹33,101 / ₹1,13,973 / ₹1,63,388 | ₹0 | 0% | 1.1 |
+| Lean infra | 18% | 77% | 21 | ₹33,776 / ₹1,36,440 / ₹1,46,665 | ₹0 | 0% | 1.4 |
+| Value price ₹400 | 13% | 81% | 21 | ₹32,282 / ₹1,04,266 / ₹1,06,148 | ₹0 | 0% | 1.1 |
+| Anchor-led | 23% | 74% | 21 | ₹23,016 / ₹1,14,376 / ₹1,28,512 | ₹0 | 0% | 1.8 |
+| Monthly slots (the plan) | 13% | 75% | 22 | ₹30,233 / ₹1,25,468 / ₹1,36,903 | ₹0 | 0% | 1.1 |
+
+## Scenario report: Price-sensitive market
+
+Advertisers react strongly to price (elasticity 2.5 instead of 1.5): cheap slots sell much faster, dear ones much slower. At the ₹500 list price nothing changes; it decides whether a price move pays.
+
+Best strategy here: **Light anchors**.
+
+| Strategy | P(₹1L by m18) | by m24 | Median month to ₹1L | Median net m12 / m24 / m36 | 5th-pct lowest cash | P(out of credit) | Hours/wk m24 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Light anchors | 92% | 100% | 14 | ₹59,453 / ₹1,33,833 / ₹1,34,547 | ₹0 | 0% | 1.4 |
+| Value price ₹400 | 93% | 100% | 14 | ₹76,236 / ₹1,05,702 / ₹1,06,484 | ₹0 | 0% | 1.1 |
+| Lean infra | 79% | 97% | 16 | ₹58,152 / ₹1,46,577 / ₹1,46,753 | ₹0 | 0% | 1.4 |
+| Monthly slots (the plan) | 77% | 96% | 16 | ₹54,817 / ₹1,35,765 / ₹1,37,087 | ₹0 | 0% | 1.1 |
+| Premium price ₹600 | 64% | 86% | 17 | ₹56,785 / ₹1,34,941 / ₹1,51,712 | ₹0 | 0% | 1.0 |
+| Anchor-led | 32% | 73% | 21 | ₹31,919 / ₹1,10,517 / ₹1,24,494 | ₹0 | 0% | 1.8 |
+
+## Scenario report: Hardware trouble
+
+TVs fail 3% a month, 30% of power cuts need a manual restart, hosts unplug twice as often.
+
+Best strategy here: **Light anchors**.
+
+| Strategy | P(₹1L by m18) | by m24 | Median month to ₹1L | Median net m12 / m24 / m36 | 5th-pct lowest cash | P(out of credit) | Hours/wk m24 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Light anchors | 88% | 100% | 15 | ₹56,618 / ₹1,27,727 / ₹1,28,224 | ₹0 | 0% | 5.4 |
+| Lean infra | 77% | 95% | 16 | ₹54,661 / ₹1,39,614 / ₹1,40,927 | ₹0 | 0% | 5.3 |
+| Premium price ₹600 | 70% | 94% | 16 | ₹55,649 / ₹1,43,939 / ₹1,57,309 | ₹0 | 0% | 4.9 |
+| Monthly slots (the plan) | 71% | 94% | 17 | ₹51,174 / ₹1,26,857 / ₹1,30,195 | ₹0 | 0% | 5.1 |
+| Value price ₹400 | 34% | 89% | 20 | ₹46,776 / ₹95,057 / ₹99,318 | ₹0 | 0% | 5.1 |
+| Anchor-led | 26% | 65% | 22 | ₹25,826 / ₹1,04,019 / ₹1,16,102 | ₹0 | 0% | 5.7 |
 

@@ -47,7 +47,7 @@ A **report card** opens after each single month, and after a run when you pause 
 
 ## Scenario lab: which plan holds up best?
 
-The Scenario lab runs **6 strategies × 5 economies = 30 scenarios**, each as a Monte Carlo batch. It ranks the strategies, writes a report for each economy and recommends a plan, with a month-by-month timeline from a typical run. Use **▶ Play** to start a game with any strategy in any economy.
+The Scenario lab runs **6 strategies × 8 economies = 48 scenarios**, each as a Monte Carlo batch. It ranks the strategies, writes a report for each economy and recommends a plan. **▶ Play** starts a game with any strategy in any economy, and the download buttons save the plan, any single economy's report, or everything.
 
 | Economy | What changes |
 | --- | --- |
@@ -56,6 +56,9 @@ The Scenario lab runs **6 strategies × 5 economies = 30 scenarios**, each as a 
 | Recession | 0.6 new advertisers a month, 9% churn, anchors harder to sign and renew |
 | Cost inflation | Kit +20%, host fee ₹600, data ₹250, fixed ₹7,000 |
 | Tight money | ₹50,000 credit at 3% a month, ₹25,000 top-up |
+| Bad year, then recovery | Half the arrivals and double the churn in months 4–15, then normal |
+| Price-sensitive market | Elasticity 2.5 (only matters when you move away from ₹500) |
+| Hardware trouble | TVs fail 3% a month, 30% of power cuts need a restart, twice the unplugs |
 
 | Strategy | What it does |
 | --- | --- |
@@ -66,13 +69,25 @@ The Scenario lab runs **6 strategies × 5 economies = 30 scenarios**, each as a 
 | Value price ₹400 | Lower list price, more sign-ups |
 | Lean infra | Shop Wi-Fi and a self-hosted signage server from month 13 |
 
-To write the full report from the command line:
+### Reports
 
-```
-node tools/scenario-report.mjs 300 36   # runs per scenario, months
-```
+`node tools/scenario-report.mjs 300 36` (runs per scenario, months) takes about 22 s and writes:
 
-This writes `reports/scenario-report.md` and `reports/scenario-results.json`. The committed report (300 runs each) recommends **Light anchors**. It has an 89% average chance of ₹1 lakh a month by month 24 across the five economies, and 50% in a recession against 21% for the plan's all-monthly model. It reaches ₹1 lakh about 2 months sooner in a normal economy. Premium ₹600 earns the most once both networks are full, so the plan suggests testing it later. These results rest on assumptions about anchor pitch success and renewal rates, so confirm those on the first trip.
+| File | What's in it |
+| --- | --- |
+| [`reports/best-plan.md`](reports/best-plan.md) | **The recommended plan**: the decision, results in every economy, a phased roadmap, month-by-month checkpoints (on track vs warning line), and which strategy to switch to if the market turns out different |
+| [`reports/scenarios/`](reports/scenarios/) | One report per economy: verdict, all strategies ranked, median net by month, how the best strategy grows, a typical run, and the signs that you're in that economy |
+| [`reports/scenario-report.md`](reports/scenario-report.md) | Overview: ranking, chance-of-₹1-lakh grid, a short report per economy |
+| `reports/scenario-results.json` | The raw numbers |
+
+**Current recommendation: Light anchors.** Hold 2 slots per network for hospitals, schools, coaching institutes and labs, and sell the other 8 monthly.
+
+- It averages a 92% chance of ₹1 lakh a month by month 24 across the 8 economies and comes out best in 7 of them. In a boom, ₹600 pricing wins.
+- In a recession its chance is 50%, against 21% for the original all-monthly plan.
+- It reaches ₹1 lakh about 2 months sooner in a normal economy.
+- ₹600 pricing earns more once both networks are full, so the plan suggests testing it in phase 4.
+
+The recommendation depends on assumptions about how often anchor pitches sign and leases renew. Check them on the first trip and rerun the lab with the real numbers.
 
 ## Run the tests
 
@@ -135,7 +150,7 @@ Then re-run P2, P3 and P4 in Monte Carlo. Buy the next 10 screens only if P2 giv
 
 ## QA checklist (plan section 12)
 
-- [x] All fixtures in section 9 pass from a clean checkout (`node test/engine.test.mjs`: 34 passing)
+- [x] All fixtures in section 9 pass from a clean checkout (`node test/engine.test.mjs`: 35 passing)
 - [ ] Works offline in current Chrome, Firefox and Safari. Tested in headless Chromium only; the code is plain ES5 with standard DOM APIs.
 - [x] No network requests at all (checked with Playwright's request log)
 - [x] Real-time speed advances one month per 60 s. A month ticks when accumulated frame time reaches 60,000 ms; time does not count while the tab is hidden.

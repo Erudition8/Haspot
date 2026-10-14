@@ -362,7 +362,7 @@ var HaspotEngine = (function () {
       halfShare: 0.0,       // share of arrivals that buy a half slot
       targetSold: 0,        // 0 = no cap beyond open slots; plan mode uses 8
       fixedArrivals: -1,    // -1 = Poisson; >= 0 = exactly this many per live network per month
-      shockFromMonth: 0, shockArrivalsMult: 1, shockChurnMult: 1
+      shockFromMonth: 0, shockMonths: 0, shockArrivalsMult: 1, shockChurnMult: 1 // shockMonths 0 = never recovers
     },
     anchors: {
       enabled: false, slotsPerNetwork: 5, price: 450, termMonths: 12, billing: 'quarterly',
@@ -783,7 +783,7 @@ var HaspotEngine = (function () {
     }
 
     // 3. demand on open slots
-    var shock = p.demand.shockFromMonth > 0 && M >= p.demand.shockFromMonth;
+    var shock = p.demand.shockFromMonth > 0 && M >= p.demand.shockFromMonth && (!(p.demand.shockMonths > 0) || M < p.demand.shockFromMonth + p.demand.shockMonths);
     var churnP = (p.demand.reports ? p.demand.churnMonthly : p.demand.churnNoReports) * (shock ? p.demand.shockChurnMult : 1);
     var newAdvertisers = 0;
     if (!classic) {
@@ -1186,8 +1186,8 @@ var HaspotEngine = (function () {
     var runs = opts.runs || 500, months = opts.months || 36, seed = opts.seed != null ? opts.seed : 1;
     var world = createWorld(opts.worldSeed != null ? opts.worldSeed : 7);
     var by18 = 0, by24 = 0, breached = 0, firstMonths = [], lowCash = [], hours24 = [], perRun = [];
-    var profitByMonth = [], cashByMonth = [];
-    for (var m = 0; m < months; m++) { profitByMonth.push([]); cashByMonth.push([]); }
+    var profitByMonth = [], cashByMonth = [], screensByMonth = [], soldByMonth = [];
+    for (var m = 0; m < months; m++) { profitByMonth.push([]); cashByMonth.push([]); screensByMonth.push([]); soldByMonth.push([]); }
     for (var i = 0; i < runs; i++) {
       var s = newGame(params, { seed: seed + i, world: world, worldSeed: opts.worldSeed });
       s.log = []; s.quiet = true; // no event text in batch runs
@@ -1198,6 +1198,8 @@ var HaspotEngine = (function () {
         if (r.cash < low) low = r.cash;
         profitByMonth[r.month - 1].push(r.profit);
         cashByMonth[r.month - 1].push(r.cash);
+        screensByMonth[r.month - 1].push(r.screens_ph + r.screens_ki);
+        soldByMonth[r.month - 1].push(r.slots_sold_ph + r.slots_sold_ki);
         if (r.month === 24) hours24.push(r.founder_hours_week);
       }
       var at24 = s.ledger[Math.min(23, s.ledger.length - 1)];
@@ -1226,7 +1228,9 @@ var HaspotEngine = (function () {
       p5LowestCash: percentile(lowCash, 0.05),
       pCreditBreached: breached / runs,
       medianHoursAt24: hours24.length ? percentile(hours24, 0.5) : null,
-      fan: fan, cashFan: cashFan, perRun: perRun
+      fan: fan, cashFan: cashFan, perRun: perRun,
+      screensMedian: screensByMonth.map(function (a) { a.sort(num); return a.length ? percentile(a, 0.5) : null; }),
+      soldMedian: soldByMonth.map(function (a) { a.sort(num); return a.length ? percentile(a, 0.5) : null; })
     };
   }
 
@@ -1240,7 +1244,13 @@ var HaspotEngine = (function () {
     { id: 'inflation', name: 'Cost inflation', desc: 'Kit costs +20%, host fee ₹600, data ₹250, fixed costs ₹7,000 a month.',
       overrides: { kit: { tv: 12000, hotspot: 2600, power: 850, fitting: 950 }, opex: { hostFee: 600, data: 250 }, fixedBase: 7000 } },
     { id: 'tight', name: 'Tight money', desc: 'Credit limit ₹50,000 at 3% a month, and only ₹25,000 a month of salary top-up.',
-      overrides: { start: { creditLimit: 50000, creditInterestMonthly: 0.03 }, growth: { salaryTopup: 25000 } } }
+      overrides: { start: { creditLimit: 50000, creditInterestMonthly: 0.03 }, growth: { salaryTopup: 25000 } } },
+    { id: 'badyear', name: 'Bad year, then recovery', desc: 'From month 4 to month 15, half the usual new advertisers and twice the churn; normal after that.',
+      overrides: { demand: { shockFromMonth: 4, shockMonths: 12, shockArrivalsMult: 0.5, shockChurnMult: 2 } } },
+    { id: 'pricesensitive', name: 'Price-sensitive market', desc: 'Advertisers react strongly to price (elasticity 2.5 instead of 1.5): cheap slots sell much faster, dear ones much slower. At the ₹500 list price nothing changes; it decides whether a price move pays.',
+      overrides: { demand: { elasticity: 2.5 } } },
+    { id: 'hardware', name: 'Hardware trouble', desc: 'TVs fail 3% a month, 30% of power cuts need a manual restart, hosts unplug twice as often.',
+      overrides: { events: { tvFailMonthly: 0.03, restartFailProb: 0.3, unplugMonthly: 0.2 } } }
   ];
   var STRATEGIES = [
     { id: 'monthly', name: 'Monthly slots (the plan)', desc: 'All 10 slots sold month to month at ₹500; founders at ₹300.', overrides: {} },
@@ -1274,6 +1284,8 @@ var HaspotEngine = (function () {
       p5LowestCash: mc.p5LowestCash, pCreditBreached: mc.pCreditBreached, medianHoursAt24: mc.medianHoursAt24,
       medianNet12: at(mc.fan, 12), medianNet24: at(mc.fan, 24), medianNet36: at(mc.fan, months), medianCash36: at(mc.cashFan, months),
       netMedianByMonth: mc.fan.map(function (f) { return f.n ? Math.round(f.p50) : null; }),
+      cashMedianByMonth: mc.cashFan.map(function (f) { return f.n ? Math.round(f.p50) : null; }),
+      screensMedianByMonth: mc.screensMedian, soldMedianByMonth: mc.soldMedian,
       representativeSeed: sorted.length ? sorted[Math.floor(sorted.length / 2)].seed : 1 };
     m.score = labScore(m);
     return m;
@@ -1335,12 +1347,113 @@ var HaspotEngine = (function () {
     var normal = cells.filter(function (c) { return c.economy === 'normal'; }).sort(function (a, b) { return b.medianNet36 - a.medianNet36; });
     if (normal[0] && normal[0].strategy !== best && bn)
       watch.push(name(STRATEGIES, normal[0].strategy) + ' earns more once the network is full (median ' + fmtINR(normal[0].medianNet36) + ' a month at month 36 vs ' + fmtINR(bn.medianNet36) + '). Once both networks sell out, test that move.');
-    watch.push('The worst case is a ' + name(ECONOMIES, bo.worstEconomy).toLowerCase() + ': only ' + pctTxt(bo.worstP24) + ' chance of ₹1 lakh by month 24. If fewer than 4 slots per network are sold by month 6, slow expansion and push anchor and institution sales.');
+    watch.push('The worst case is a ' + name(ECONOMIES, bo.worstEconomy).toLowerCase() + ': only ' + pctTxt(bo.worstP24) + ' chance of ₹1 lakh by month 24. If you are below the warning line in the checkpoints for two months running, hold off on the next batch of screens and push anchor and institution sales.');
     if (/anchor/.test(best) || best === 'hybrid') watch.push('Anchor numbers are assumptions (25% of pitches sign, 70% renew). Check them on the first trip: if fewer than 1 in 6 institution meetings sign, fall back to all-monthly slots.');
     var maxBreach = Math.max.apply(null, cells.filter(function (c) { return c.strategy === best; }).map(function (c) { return c.pCreditBreached; }));
     watch.push(maxBreach > 0 ? 'Running out of credit happened in ' + pctTxt(maxBreach) + ' of runs in its worst economy. Keep the credit line open.' : 'No run ran out of credit in any economy, but keep the credit line open through the expansion months.');
     return { why: why, watch: watch };
   }
+  // ---- report documents ----
+  var SIGNALS = {
+    boom: 'More than one new advertiser per network signs most months and churn stays under 3%.',
+    recession: 'Fewer slots sold than the warning line below, or advertisers cancelling more than 1 in 10 a month.',
+    inflation: 'Kit quotes above ₹16,000 a screen, or hosts asking ₹600 or more a month.',
+    tight: 'The bank cuts your credit line, or you can no longer put in ₹40,000 a month.',
+    badyear: 'Sales stall after a good start (month 3 or later) while churn doubles.',
+    pricesensitive: 'Most lost pitches mention price, and the few at ₹300–400 sign quickly.',
+    hardware: 'Uptime below 97% two months running, or TVs failing the power-cut test.'
+  };
+  function cellOf(cells, st, ec) { return cells.filter(function (c) { return c.strategy === st && c.economy === ec; })[0]; }
+  function medAt(arr, m) { var v = arr && arr[m - 1]; return v == null ? null : v; }
+  function money(v) { return v == null || !isFinite(v) ? '—' : fmtINR(v); }
+  var CHECK_MONTHS = [3, 6, 9, 12, 18, 24, 30, 36];
+
+  function labEconomyMarkdown(econId, cells, summary, timeline, meta) {
+    var e = byId(ECONOMIES, econId), list = summary.byEconomy[econId], top = list[0], out = [];
+    var mon = cellOf(cells, 'monthly', econId);
+    out.push('# Scenario report: ' + e.name, '', e.desc, '');
+    out.push('*' + (meta && meta.date ? 'Generated ' + meta.date + ' · ' : '') + top.runs + ' Monte Carlo runs per strategy · ' + top.months + ' months. Same start for every run: ₹1,17,800 in, 10 pharmacy screens, 5 founding advertisers, growth by the plan\'s rules.*', '');
+    out.push('## Verdict', '');
+    out.push('**Best strategy here: ' + byId(STRATEGIES, top.strategy).name + '.** ' + byId(STRATEGIES, top.strategy).desc, '');
+    out.push('- Chance of ₹1 lakh net a month: **' + pctTxt(top.pLakhBy18) + '** by month 18, **' + pctTxt(top.pLakhBy24) + '** by month 24');
+    out.push('- Typical month to reach it: ' + (top.medianMonthToLakh == null ? 'not reached in a typical run' : 'month ' + Math.round(top.medianMonthToLakh)));
+    out.push('- Median net a month at month 12 / 24 / ' + top.months + ': ' + [top.medianNet12, top.medianNet24, top.medianNet36].map(money).join(' / '));
+    out.push('- Lowest cash (5th percentile): ' + money(top.p5LowestCash) + ' · chance of running out of credit: ' + pctTxt(top.pCreditBreached));
+    if (mon && top.strategy !== 'monthly') out.push('- Against the plan\'s all-monthly model: ' + pctTxt(top.pLakhBy24) + ' vs ' + pctTxt(mon.pLakhBy24) + ' chance by month 24');
+    out.push('', '## All strategies, ranked', '');
+    out.push('| # | Strategy | P(₹1L by m18) | by m24 | Median month to ₹1L | Median net m12 / m24 / m' + top.months + ' | 5th-pct lowest cash | P(out of credit) | Hours/wk m24 | Score |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    list.forEach(function (c, i) {
+      out.push('| ' + (i + 1) + ' | ' + byId(STRATEGIES, c.strategy).name + ' | ' + pctTxt(c.pLakhBy18) + ' | ' + pctTxt(c.pLakhBy24) + ' | ' + (c.medianMonthToLakh == null ? 'not reached' : Math.round(c.medianMonthToLakh)) + ' | ' +
+        [c.medianNet12, c.medianNet24, c.medianNet36].map(money).join(' / ') + ' | ' + money(c.p5LowestCash) + ' | ' + pctTxt(c.pCreditBreached) + ' | ' + (c.medianHoursAt24 == null ? '—' : c.medianHoursAt24.toFixed(1)) + ' | ' + c.score.toFixed(0) + ' |');
+    });
+    var ms = CHECK_MONTHS.filter(function (m) { return m <= top.months; });
+    out.push('', '## Median net profit a month, by month', '', '| Strategy | ' + ms.map(function (m) { return 'm' + m; }).join(' | ') + ' |', '| --- |' + ms.map(function () { return ' --- |'; }).join(''));
+    list.forEach(function (c) { out.push('| ' + byId(STRATEGIES, c.strategy).name + ' | ' + ms.map(function (m) { return money(medAt(c.netMedianByMonth, m)); }).join(' | ') + ' |'); });
+    out.push('', '## How the best strategy grows (median of all runs)', '', '| Month | Screens | Slots sold (both networks) | Net / month | Cash |', '| --- | --- | --- | --- | --- |');
+    ms.forEach(function (m) { out.push('| ' + m + ' | ' + Math.round(medAt(top.screensMedianByMonth, m) || 0) + ' | ' + Math.round(medAt(top.soldMedianByMonth, m) || 0) + ' | ' + money(medAt(top.netMedianByMonth, m)) + ' | ' + money(medAt(top.cashMedianByMonth, m)) + ' |'); });
+    if (timeline) {
+      out.push('', '## A typical run of ' + byId(STRATEGIES, top.strategy).name + ' in this economy', '');
+      timeline.steps.forEach(function (st) { out.push('- **Month ' + st.month + ':** ' + st.text); });
+    }
+    if (SIGNALS[econId]) out.push('', '## How you would know you are in this economy', '', SIGNALS[econId]);
+    return out.join('\n') + '\n';
+  }
+
+  function labPlanMarkdown(cells, summary, timeline, meta) {
+    var best = summary.best, st = byId(STRATEGIES, best), bo = summary.overall[0], ins = labInsights(cells, summary), out = [];
+    var normal = cellOf(cells, best, 'normal'), warn = cellOf(cells, best, 'recession');
+    out.push('# Haspot: recommended plan, ' + st.name, '');
+    out.push('*' + (meta && meta.date ? meta.date + ' · ' : '') + 'Based on ' + cells.length + ' simulated scenarios (' + STRATEGIES.length + ' strategies × ' + ECONOMIES.length + ' economies, ' + cells[0].runs + ' runs each, ' + cells[0].months + ' months). Demand and failure rates are the business plan\'s assumptions until the pilot calibrates them.*', '');
+    out.push('## The decision', '', '**Run Haspot as "' + st.name + '":** ' + st.desc, '');
+    out.push('It is the strongest strategy across all ' + ECONOMIES.length + ' economies tested: an average **' + pctTxt(bo.avgP24) + '** chance of ₹1 lakh net a month by month 24, best in ' + bo.wins.length + ' of ' + ECONOMIES.length + ' economies, and its worst case (' + byId(ECONOMIES, bo.worstEconomy).name.toLowerCase() + ') is still ' + pctTxt(bo.worstP24) + '.', '');
+    out.push('| Economy | P(₹1L by m18) | by m24 | Typical month to ₹1L | Median net m24 | Lowest cash (5th pct) | P(out of credit) |', '| --- | --- | --- | --- | --- | --- | --- |');
+    ECONOMIES.forEach(function (e) {
+      var c = cellOf(cells, best, e.id); if (!c) return;
+      out.push('| ' + e.name + ' | ' + pctTxt(c.pLakhBy18) + ' | ' + pctTxt(c.pLakhBy24) + ' | ' + (c.medianMonthToLakh == null ? 'not reached' : Math.round(c.medianMonthToLakh)) + ' | ' + money(c.medianNet24) + ' | ' + money(c.p5LowestCash) + ' | ' + pctTxt(c.pCreditBreached) + ' |');
+    });
+    out.push('', '## Why this plan', '');
+    ins.why.forEach(function (t) { out.push('- ' + t); });
+    // roadmap
+    out.push('', '## Roadmap', '');
+    var steps = timeline ? timeline.steps : [];
+    var phases = [
+      { name: 'Phase 1: Launch (months 0–3)', from: 0, to: 3, todo: ['Install 10 pharmacy screens, sign the 5 founding advertisers (3 months prepaid), and set up the hub shop with 1 spare TV and 2 spare hotspots.', /anchor/.test(best) || best === 'hybrid' ? 'Pitch hospitals, labs, schools and coaching institutes for anchor leases (1 slot each, 12 months, billed quarterly in advance).' : 'Sell monthly slots; send every advertiser a monthly report with QR scans to keep churn near 5%.', 'Run the power-cut test on every TV before installing it.'] },
+      { name: 'Phase 2: Fill Pharmacy and expand (months 4–8)', from: 4, to: 8, todo: ['Add 10 more pharmacy screens as soon as 7 of 10 slots are sold and cash covers the kit (₹1,36,500), then 1 more to reach 21.', 'Launch the Kirana network (10 screens) once Pharmacy has 20 screens and 7 slots sold.'] },
+      { name: 'Phase 3: Scale Kirana to full size (months 9–15)', from: 9, to: 15, todo: ['Grow Kirana to 21 screens on the same 7-of-10 rule.', 'Keep founder time under 4 hours a week: turn on the Apps Script monthly close once you pass about 30 screens.'] },
+      { name: 'Phase 4: Optimise (month 16 onward)', from: 16, to: 999, todo: ['When a network sells out, test a higher list price on new advertisers (the simulation shows ₹600 earning most once full).', 'Move signage to a self-hosted server from year 2 only if it still needs no licences; recheck uptime monthly.'] }
+    ];
+    phases.forEach(function (ph) {
+      out.push('### ' + ph.name, '');
+      ph.todo.forEach(function (t) { out.push('- ' + t); });
+      var inside = steps.filter(function (x) { return x.month >= ph.from && x.month <= ph.to; });
+      if (inside.length) { out.push('', 'In a typical simulated run:'); inside.forEach(function (x) { out.push('- Month ' + x.month + ': ' + x.text); }); }
+      out.push('');
+    });
+    // checkpoints
+    var ms = CHECK_MONTHS.filter(function (m) { return m <= normal.months && m <= 24; });
+    out.push('## Checkpoints: on track or not?', '', 'Compare your real numbers with these each month. **On track** is the median run in a normal economy; **Warning line** is the median run in a recession. Below the warning line, use the switch rules in the next section.', '');
+    out.push('| Month | Screens (on track) | Slots sold, on track | Slots sold, warning line | Net / month, on track | Net / month, warning line | Cash, on track |', '| --- | --- | --- | --- | --- | --- | --- |');
+    ms.forEach(function (m) {
+      out.push('| ' + m + ' | ' + Math.round(medAt(normal.screensMedianByMonth, m) || 0) + ' | ' + Math.round(medAt(normal.soldMedianByMonth, m) || 0) + ' | ' + (warn ? Math.floor(medAt(warn.soldMedianByMonth, m) || 0) : '—') + ' | ' + money(medAt(normal.netMedianByMonth, m)) + ' | ' + (warn ? money(medAt(warn.netMedianByMonth, m)) : '—') + ' | ' + money(medAt(normal.cashMedianByMonth, m)) + ' |');
+    });
+    // switch rules
+    out.push('', '## If the market turns out different', '', '| If you see… | It looks like | Best strategy there | Chance of ₹1L by m24 (this plan → best there) |', '| --- | --- | --- | --- |');
+    ECONOMIES.forEach(function (e) {
+      if (e.id === 'normal') return;
+      var topE = summary.byEconomy[e.id][0], mine = cellOf(cells, best, e.id);
+      out.push('| ' + (SIGNALS[e.id] || '') + ' | ' + e.name + ' | ' + (topE.strategy === best ? '**Stay the course**' : byId(STRATEGIES, topE.strategy).name) + ' | ' + pctTxt(mine.pLakhBy24) + (topE.strategy === best ? '' : ' → ' + pctTxt(topE.pLakhBy24)) + ' |');
+    });
+    out.push('', '## Watch-outs', '');
+    ins.watch.forEach(function (t) { out.push('- ' + t); });
+    out.push('', '## Before you commit: calibrate', '', 'Run the pilot (first 2–10 screens) for 8 weeks, then put the real numbers into Config and rerun the Scenario lab:', '',
+      '- New advertisers per month and churn → `demand.arrivalsPerNetwork`, `demand.churnMonthly`',
+      '- Anchor meetings that sign, and renewals → `anchors.pitchSuccess`, `anchors.renewProb`',
+      '- Unplugs, failed restarts, TV and hotspot failures → `events.*`', '',
+      'Buy the next 10 screens only if the recalibrated plan still shows at least a 60% chance of ₹1 lakh by month 24, and the 5th-percentile lowest cash stays inside your credit limit.');
+    return out.join('\n') + '\n';
+  }
+
   function labMarkdown(cells, summary, timeline, meta) {
     var name = function (list, id) { return byId(list, id).name; };
     var out = [];
@@ -1353,7 +1466,7 @@ var HaspotEngine = (function () {
     out.push('## Recommended plan: ' + name(STRATEGIES, best), '');
     var bo = summary.overall[0];
     out.push(byId(STRATEGIES, best).desc, '');
-    out.push('- Average chance of ₹1 lakh net a month by month 24, across the five economies: **' + pctTxt(bo.avgP24) + '**', '- Worst economy for it: **' + name(ECONOMIES, bo.worstEconomy) + '** (' + pctTxt(bo.worstP24) + ')',
+    out.push('- Average chance of ₹1 lakh net a month by month 24, across all ' + ECONOMIES.length + ' economies: **' + pctTxt(bo.avgP24) + '**', '- Worst economy for it: **' + name(ECONOMIES, bo.worstEconomy) + '** (' + pctTxt(bo.worstP24) + ')',
       '- Best strategy in: ' + (bo.wins.length ? bo.wins.map(function (e) { return name(ECONOMIES, e); }).join(', ') : 'no single economy, but the most consistent overall'),
       '- Average chance of running out of credit: ' + pctTxt(bo.avgBreach), '');
     var ins = labInsights(cells, summary);
@@ -1429,7 +1542,7 @@ var HaspotEngine = (function () {
     paybackMonths: paybackMonths, steadyNet: steadyNet, calendarLabel: calendarLabel, calendarMonth: calendarMonth,
     soldSlots: soldSlots, anchorSlotsUsed: anchorSlotsUsed, openCapacity: function (s) { return openCapacity(s, effective(s.params)); },
     activeScreens: activeScreens, shopById: shopById, instById: instById, screenAt: screenAt, advMonthlyRate: advMonthlyRate,
-    ECONOMIES: ECONOMIES, STRATEGIES: STRATEGIES, labParams: labParams, labCell: labCell, labSummarize: labSummarize, labTimeline: labTimeline, labMarkdown: labMarkdown, labScore: labScore, labInsights: labInsights,
+    ECONOMIES: ECONOMIES, STRATEGIES: STRATEGIES, labParams: labParams, labCell: labCell, labSummarize: labSummarize, labTimeline: labTimeline, labMarkdown: labMarkdown, labScore: labScore, labInsights: labInsights, labEconomyMarkdown: labEconomyMarkdown, labPlanMarkdown: labPlanMarkdown,
     monteCarlo: monteCarlo, ledgerToCSV: ledgerToCSV, csvToLedger: csvToLedger, exportState: exportState, importState: importState,
     fmtINR: fmtINR, rngNext: rngNext
   };
@@ -1926,7 +2039,7 @@ var HaspotEngine = (function () {
       ['demand.churnNoReports', 'Churn / mo without reports', 'n', '', 1], ['demand.reports', 'Send monthly reports', 'b', '', 1],
       ['demand.makeGood', 'Refund dark days (make-good)', 'b', '', 1], ['demand.halfShare', 'Share buying half slots', 'n', '', 1],
       ['demand.targetSold', 'Cap on open slots sold', 'n', '0 = no cap', 1], ['demand.fixedArrivals', 'Fixed arrivals', 'n', '-1 = random', 1],
-      ['demand.shockFromMonth', 'Bad-year shock from month', 'n', '0 = off', 1], ['demand.shockArrivalsMult', 'Shock: arrivals ×', 'n', '', 1], ['demand.shockChurnMult', 'Shock: churn ×', 'n', '', 1]]],
+      ['demand.shockFromMonth', 'Bad-year shock from month', 'n', '0 = off', 1], ['demand.shockMonths', 'Shock lasts (months)', 'n', '0 = never ends', 1], ['demand.shockArrivalsMult', 'Shock: arrivals ×', 'n', '', 1], ['demand.shockChurnMult', 'Shock: churn ×', 'n', '', 1]]],
     ['Anchor leases', [
       ['anchors.enabled', 'Anchor leases on', 'b'], ['anchors.slotsPerNetwork', 'Slots reserved for anchors', 'n'], ['anchors.price', 'Anchor price ₹ / screen / slot / mo', 'n'],
       ['anchors.termMonths', 'Default term (months)', 'n'], ['anchors.billing', 'Default billing', 's', '', 0, ['quarterly', 'annual']], ['anchors.annualDiscount', 'Annual upfront discount', 'n'],
@@ -2626,7 +2739,7 @@ var HaspotEngine = (function () {
   // Scenario lab
   // =====================================================================
   var lab = null, labRunning = false;
-  try { var cached = localStorage.getItem('haspot-sim-lab'); if (cached) lab = JSON.parse(cached); } catch (e) { lab = null; }
+  try { var cached = localStorage.getItem('haspot-sim-lab'); if (cached) lab = JSON.parse(cached); if (lab && (!lab.cells[0].soldMedianByMonth || lab.cells.length !== E.STRATEGIES.length * E.ECONOMIES.length)) lab = null; } catch (e) { lab = null; }
   function sName(id) { var s = E.STRATEGIES.filter(function (x) { return x.id === id; })[0]; return s ? s.name : id; }
   function eName(id) { var s = E.ECONOMIES.filter(function (x) { return x.id === id; })[0]; return s ? s.name : id; }
   function heatColor(v) { // sequential single hue (blue), light → dark
@@ -2654,7 +2767,7 @@ var HaspotEngine = (function () {
         '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Why this one</h3><ul style="margin:4px 0;padding-left:18px">' + ins.why.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
         '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Watch-outs</h3><ul style="margin:4px 0;padding-left:18px">' + ins.watch.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
         '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Month by month (typical run, normal economy)</h3><ol>' + tl.steps.map(function (st) { return '<li><b>Month ' + st.month + ':</b> ' + esc(st.text) + '</li>'; }).join('') + '</ol>' +
-        '<div class="actions"><button class="primary" data-l="play" data-s="' + sum.best + '" data-e="normal">▶ Play this plan</button><button data-l="md">Download full report (.md)</button></div></div>';
+        '<div class="actions"><button class="primary" data-l="play" data-s="' + sum.best + '" data-e="normal">▶ Play this plan</button><button data-l="plan">Download plan (.md)</button><button data-l="md">Download all reports (.md)</button></div></div>';
       // ranking
       h += '<div class="card c5"><h2>Strategy ranking</h2><div class="sub">Averaged over all ' + E.ECONOMIES.length + ' economies</div>' +
         '<div class="rankrow h"><span></span><span>Strategy</span><span>Score</span><span>Avg P(₹1L m24)</span><span>Worst case</span></div>' +
@@ -2676,7 +2789,7 @@ var HaspotEngine = (function () {
       E.ECONOMIES.forEach(function (ec) {
         var list = sum.byEconomy[ec.id], top = list[0];
         var maxNet = Math.max.apply(null, list.map(function (c) { return Math.max(0, c.medianNet24 || 0); }).concat([1]));
-        h += '<div class="card"><h2>' + esc(ec.name) + ' <span class="pill go">best: ' + esc(sName(top.strategy)) + '</span></h2><div class="sub">' + esc(ec.desc) + '</div>' +
+        h += '<div class="card"><h2>' + esc(ec.name) + ' <span class="pill go">best: ' + esc(sName(top.strategy)) + '</span></h2><div class="sub">' + esc(ec.desc) + ' <button style="padding:0 6px;font-size:11.5px" data-l="ecmd" data-e="' + ec.id + '">Report ↓</button></div>' +
           '<div class="facts"><div class="row2"><span>Best chance of ₹1L by m24</span><span>' + pct(top.pLakhBy24) + '</span></div><div class="row2"><span>Median month to ₹1L</span><span>' + (top.medianMonthToLakh == null ? 'not reached' : 'month ' + Math.round(top.medianMonthToLakh)) + '</span></div>' +
           '<div class="row2"><span>5th-percentile lowest cash</span><span>' + fmt(top.p5LowestCash) + '</span></div></div>' +
           '<div class="sub" style="margin:8px 0 2px">Median net profit at month 24, by strategy</div>' +
@@ -2723,7 +2836,9 @@ var HaspotEngine = (function () {
     if (l === 'run') runLab();
     if (l === 'mc' && S) mcModal(S.presetId || 'P2');
     if (l === 'compare' && S) compareModal();
-    if (l === 'md' && lab) download('haspot-scenario-report.md', E.labMarkdown(lab.cells, lab.summary, lab.timeline, { date: lab.when }), 'text/markdown');
+    if (l === 'md' && lab) download('haspot-scenario-report.md', [E.labPlanMarkdown(lab.cells, lab.summary, lab.timeline, { date: lab.when }), E.labMarkdown(lab.cells, lab.summary, lab.timeline, { date: lab.when })].concat(E.ECONOMIES.map(function (ec) { return E.labEconomyMarkdown(ec.id, lab.cells, lab.summary, null, { date: lab.when }); })).join('\n---\n\n'), 'text/markdown');
+    if (l === 'plan' && lab) download('haspot-best-plan.md', E.labPlanMarkdown(lab.cells, lab.summary, lab.timeline, { date: lab.when }), 'text/markdown');
+    if (l === 'ecmd' && lab) { var top = lab.summary.byEconomy[b.dataset.e][0]; download('haspot-scenario-' + b.dataset.e + '.md', E.labEconomyMarkdown(b.dataset.e, lab.cells, lab.summary, E.labTimeline(top.strategy, b.dataset.e, top.representativeSeed, top.months), { date: lab.when }), 'text/markdown'); }
     if (l === 'play') {
       var st = b.dataset.s, ec = b.dataset.e;
       var cell = lab && lab.cells.filter(function (c) { return c.strategy === st && c.economy === ec; })[0];

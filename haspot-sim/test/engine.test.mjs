@@ -212,6 +212,16 @@ test('scenario lab: every strategy × economy runs, ranks and explains', () => {
   const md = E.labMarkdown(cells, sum, tl, {});
   for (const ec of E.ECONOMIES) assert.ok(md.includes('Scenario report: ' + ec.name));
   assert.ok(md.includes('Recommended plan'));
+  const plan = E.labPlanMarkdown(cells, sum, tl, {});
+  for (const h of ['## The decision', '## Roadmap', '## Checkpoints', '## If the market turns out different']) assert.ok(plan.includes(h), h);
+  for (const ec of E.ECONOMIES) assert.ok(E.labEconomyMarkdown(ec.id, cells, sum, null, {}).includes('# Scenario report: ' + ec.name));
+});
+test('bad-year shock with shockMonths recovers afterwards', () => {
+  const p = E.labParams('monthly', 'badyear');
+  assert.equal(p.demand.shockMonths, 12);
+  const forever = E.merge(p, { demand: { shockMonths: 0 } });
+  const a = E.monteCarlo(p, { runs: 60 }), b = E.monteCarlo(forever, { runs: 60 });
+  assert.ok(a.fan[35].p50 > b.fan[35].p50, 'recovery ends better than a permanent shock');
 });
 test('scenario lab: monthly strategy in a normal economy is the Base preset', () => {
   const a = E.monteCarlo(E.labParams('monthly', 'normal'), { runs: 30 }), b = E.monteCarlo(E.presetParams('P2'), { runs: 30 });
