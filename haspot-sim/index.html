@@ -50,14 +50,137 @@ main { flex: 1; display: flex; min-height: 0; }
 #map { display: block; width: 100%; height: 100%; cursor: grab; }
 #map.dragging { cursor: grabbing; }
 .overlay { position: absolute; background: rgba(20,35,31,.92); color: var(--paper); border-radius: 8px; padding: 7px 11px; }
-#timebox { top: 10px; left: 10px; min-width: 190px; }
-#timebox .t { font-size: 17px; font-weight: 700; }
-#timebox .sub { font-size: 11.5px; color: #B9C3BD; }
-.bar { height: 4px; background: #33473F; border-radius: 2px; margin-top: 6px; overflow: hidden; }
-.bar > div { height: 100%; width: 0; background: var(--marigold); }
-#speedbox { top: 10px; right: 10px; display: flex; gap: 4px; align-items: center; padding: 5px; }
-#speedbox button { background: transparent; color: var(--paper); border-color: #3D534A; padding: 3px 8px; }
+/* ---- shell: tabs, time, views ---- */
+.spacer { flex: 1; }
+.maintabs { display: flex; gap: 4px; background: #0D1915; padding: 3px; border-radius: 9px; }
+.maintabs button { background: transparent; border: 0; color: #B9C3BD; padding: 5px 14px; border-radius: 7px; font-weight: 600; }
+.maintabs button.on { background: var(--paper); color: var(--ink); }
+.maintabs button:hover:not(.on) { color: var(--paper); }
+#timebox { min-width: 170px; text-align: right; }
+#timebox .t { font-size: 15px; font-weight: 700; }
+#timebox .sub { font-size: 11px; color: #B9C3BD; }
+#timebox .bar { margin-top: 3px; }
+#speedbox { display: flex; gap: 4px; align-items: center; }
+#speedbox button { background: transparent; color: var(--paper); border-color: #3D534A; padding: 4px 9px; }
 #speedbox button.on { background: var(--marigold); color: var(--ink); border-color: var(--marigold); font-weight: 700; }
+#speedbox .accentbtn { background: var(--marigold); color: var(--ink); border-color: var(--marigold); font-weight: 700; }
+.rtoggle { color: #B9C3BD; font-size: 12px; display: flex; align-items: center; gap: 5px; margin-left: 6px; }
+header .hud { display: none; }
+body.tab-map header .hud { display: flex; }
+.view { display: none; flex: 1; min-width: 0; min-height: 0; }
+.view.on { display: flex; }
+#view-dash, #view-analysis { overflow-y: auto; background: var(--paper-2); }
+
+/* ---- dashboard ---- */
+.dash { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; padding: 16px; width: 100%; max-width: 1500px; margin: 0 auto; align-content: start; }
+.c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; } .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+@media (max-width: 1250px) { .c3, .c4, .c5 { grid-column: span 6; } .c7, .c8 { grid-column: span 12; } .c6 { grid-column: span 12; } }
+.card { background: #FFFDF8; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.card h2 { margin: 0 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card .sub { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.hero { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.hero .big { font-size: 22px; font-weight: 750; }
+.hero .small { color: #B9C3BD; margin-top: 2px; }
+.hero .grow { flex: 1; min-width: 240px; }
+.hero button { background: transparent; color: var(--paper); border-color: #3D534A; }
+.hero button.accent { background: var(--marigold); color: var(--ink); border-color: var(--marigold); }
+.tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1250px) { .tiles { grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); } .dash .goalcard { grid-column: span 12; } }
+.tile { background: #FFFDF8; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 8px; min-width: 0; }
+.tile .k { color: var(--muted); font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .v { font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; margin: 2px 0 0; white-space: nowrap; }
+.tile .d { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; min-height: 15px; }
+.d.up { color: #1E6B3F; } .d.down { color: #9A3A24; } .d.flat { color: var(--muted); }
+.tile svg { display: block; width: 100%; height: 30px; margin-top: 4px; }
+.ringwrap { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.ringwrap svg { width: 150px; height: 150px; flex: none; }
+.ringwrap .facts { flex: 1; min-width: 150px; }
+.facts .row2 { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted var(--paper-3); gap: 8px; }
+.facts .row2 span:last-child { font-weight: 650; font-variant-numeric: tabular-nums; }
+.status { margin-top: 8px; padding: 7px 10px; border-radius: 8px; background: var(--paper-2); font-weight: 600; }
+.status.good { background: #D5EBDD; color: #1E5534; }
+.meter { height: 12px; background: var(--paper-3); border-radius: 6px; position: relative; overflow: visible; margin: 6px 0 4px; }
+.meter > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--green); }
+.meter > b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.meterlbl { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+.netrow { padding: 8px 0; border-bottom: 1px solid var(--paper-3); }
+.netrow:last-child { border-bottom: 0; }
+.netrow .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.netrow .name { font-weight: 700; font-size: 14px; }
+.blocks { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-top: 6px; }
+.blocks i { height: 16px; border-radius: 4px; background: #fff; border: 1px dashed var(--line); }
+.blocks i.f { background: var(--green); border: 0; }
+.blocks i.a { background: var(--marigold); border: 0; }
+.pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px; background: var(--paper-2); color: var(--muted); white-space: nowrap; }
+.pill.go { background: var(--marigold); color: var(--ink); }
+.pill.ok { background: #D5EBDD; color: #1E5534; }
+.pill.bad { background: #F2D3CB; color: #7A2A17; }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+.dots i { width: 13px; height: 13px; border-radius: 50%; display: block; }
+.st-live { background: #2F7D4F; } .st-dark { background: #C98A12; } .st-failed { background: #B5523B; } .st-pending { background: #fff; border: 2px solid #8C9690; }
+.legendmini { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legendmini span { display: inline-flex; align-items: center; gap: 5px; }
+.legendmini i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.legendmini i.sq { border-radius: 2px; width: 12px; height: 12px; }
+.hbar { display: grid; grid-template-columns: 120px 1fr 70px; gap: 8px; align-items: center; padding: 3px 0; font-size: 12.5px; }
+.hbar .tr { height: 14px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
+.hbar .tr i { display: block; height: 100%; background: #eb6834; border-radius: 0 4px 4px 0; }
+.hbar span:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.badge { border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; background: #fff; }
+.badge .ic { width: 38px; height: 38px; border-radius: 50%; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--paper-3); color: #8C9690; }
+.badge.on .ic { background: var(--marigold); color: var(--ink); }
+.badge .bt { font-weight: 700; font-size: 12px; }
+.badge .bs { font-size: 11px; color: var(--muted); }
+.badge:not(.on) { opacity: .75; }
+.feed { list-style: none; margin: 0; padding: 0; }
+.feed li { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px dotted var(--paper-3); font-size: 12.5px; }
+.feed li .m { color: var(--muted); font-weight: 600; min-width: 30px; }
+.feed li .ic { width: 18px; height: 18px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; background: #8C9690; }
+.feed li.good .ic { background: #2F7D4F; } .feed li.warn .ic { background: #C98A12; } .feed li.bad .ic { background: #B5523B; }
+.tipcard { background: #FFF6E3; border-color: #E9C98B; }
+.tipcard .tiptext { font-size: 15px; font-weight: 650; margin: 6px 0 10px; line-height: 1.35; }
+.emptycard { color: var(--muted); padding: 18px 0; text-align: center; }
+.emptycard button { margin-top: 8px; }
+.legendrow.small { font-size: 11.5px; color: var(--muted); }
+
+/* tooltip, toasts */
+#dtip { position: fixed; z-index: 30; pointer-events: none; display: none; background: var(--ink); color: var(--paper); font-size: 12px; padding: 6px 9px; border-radius: 6px; max-width: 260px; line-height: 1.4; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+#toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.toast { background: var(--ink); color: var(--paper); border-radius: 12px; padding: 10px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.3); animation: pop .45s cubic-bezier(.2,1.6,.4,1); max-width: 320px; }
+.toast .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--marigold); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 17px; flex: none; }
+.toast small { display: block; color: #B9C3BD; }
+.toast.out { opacity: 0; transform: translateY(8px); transition: all .3s; }
+@keyframes pop { from { transform: scale(.6) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* report card */
+.stars { color: var(--marigold-ink); font-size: 20px; letter-spacing: 2px; }
+.rc-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+.rc-grid h3 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.kpis3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.kpis3 div { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.kpis3 b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+.kpis3 b.neg { color: var(--terracotta); }
+.kpis3 span { font-size: 11px; color: var(--muted); }
+
+/* scenario lab */
+.lab-progress { height: 8px; background: var(--paper-3); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.lab-progress i { display: block; height: 100%; width: 0; background: #2a78d6; transition: width .2s; }
+table.heat { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 12.5px; }
+table.heat th { font-weight: 600; color: var(--muted); text-align: left; padding: 4px 6px; }
+table.heat td { text-align: center; padding: 8px 4px; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+table.heat td.rowh { text-align: left; font-weight: 700; background: transparent; color: var(--ink); }
+table.heat td.best { outline: 2px solid var(--ink); outline-offset: -2px; }
+.scgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+.plan ol { margin: 6px 0 0; padding-left: 20px; }
+.plan ol li { margin: 5px 0; line-height: 1.4; }
+.plan .why { background: var(--paper-2); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+.rankrow { display: grid; grid-template-columns: 26px 1fr 90px 90px 90px; gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px dotted var(--paper-3); font-size: 12.5px; }
+.rankrow.h { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+.rankrow span:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+.rankrow .n { width: 22px; height: 22px; border-radius: 50%; background: var(--paper-3); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11.5px; }
+.rankrow.top .n { background: var(--marigold); }
 #legend { bottom: 10px; left: 10px; font-size: 11.5px; display: flex; gap: 10px; flex-wrap: wrap; max-width: calc(100% - 20px); }
 #legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 #tip { pointer-events: none; display: none; font-size: 12px; max-width: 240px; }
@@ -145,35 +268,42 @@ table.data td.neg { color: var(--terracotta); }
 <header>
   <div class="toprow">
     <div class="brand">Haspot <span>Sim</span></div>
-    <div class="hud" id="hud"></div>
+    <nav class="maintabs" role="tablist">
+      <button data-tab="dash" role="tab">Dashboard</button>
+      <button data-tab="map" role="tab">City map</button>
+      <button data-tab="analysis" role="tab">Scenario lab</button>
+    </nav>
+    <div class="spacer"></div>
+    <div id="timebox"><div class="t" id="tmonth">Month 0</div><div class="sub" id="tsub"></div><div class="bar"><div id="tbar"></div></div></div>
+    <div id="speedbox">
+      <button data-speed="0" title="Pause (Space)">❚❚</button>
+      <button data-speed="1" title="Real time: 1 minute = 1 month (1)">1×</button>
+      <button data-speed="2" title="1 month every 5 s (2)">5 s</button>
+      <button data-speed="3" title="1 month every second (3)">1 s</button>
+      <button data-speed="4" title="Jump to month N (4)">⇥ N</button>
+      <button id="nextbtn" class="accentbtn" title="Next month (N)">Next month ▸</button>
+    </div>
   </div>
   <div class="toprow">
     <div class="toolbar">
       <button data-act="new" title="New game">New game</button>
       <button data-act="scenarios">Scenarios</button>
       <button data-act="config" title="Config (C)">Config</button>
-      <button data-act="ledger">Ledger &amp; charts</button>
-      <button data-act="mc">Monte Carlo</button>
-      <button data-act="compare">Compare</button>
+      <button data-act="ledger">Ledger</button>
       <button data-act="save">Save</button>
       <button data-act="load">Load</button>
       <button data-act="help">Help</button>
+      <label class="rtoggle"><input type="checkbox" id="reportToggle"> Report after each month</label>
     </div>
     <div class="chips" id="chips"></div>
   </div>
+  <div class="hud" id="hud"></div>
 </header>
 <main>
+ <div class="view" id="view-dash"></div>
+ <div class="view" id="view-map">
   <div id="mapwrap">
     <canvas id="map" aria-label="City map. Click a building to select it."></canvas>
-    <div class="overlay" id="timebox"><div class="t" id="tmonth">Month 0</div><div class="sub" id="tsub"></div><div class="bar"><div id="tbar"></div></div></div>
-    <div class="overlay" id="speedbox">
-      <button data-speed="0" title="Pause (Space)">❚❚</button>
-      <button data-speed="1" title="Real time: 1 minute = 1 month (1)">1×</button>
-      <button data-speed="2" title="1 month every 5 s (2)">5 s</button>
-      <button data-speed="3" title="1 month every second (3)">1 s</button>
-      <button data-speed="4" title="Jump to month N (4)">⇥ N</button>
-      <button id="nextbtn" title="Next month (N)">+1</button>
-    </div>
     <div class="overlay" id="legend">
       <span><i style="background:var(--pharmacy)"></i>Pharmacy</span>
       <span><i style="background:var(--kirana)"></i>Kirana</span>
@@ -192,7 +322,11 @@ table.data td.neg { color: var(--terracotta); }
     <section class="panel"><h3>Advertisers <span id="advcount"></span></h3><ul class="list" id="advlist"></ul></section>
     <section class="panel" style="flex:1"><h3>Event log</h3><ul class="list" id="log" style="max-height:none"></ul></section>
   </aside>
+ </div>
+ <div class="view" id="view-analysis"></div>
 </main>
+<div id="dtip" role="tooltip"></div>
+<div id="toasts" aria-live="polite"></div>
 <div class="modal-bg" id="modal-bg"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
 <input type="file" id="filein" accept=".json,.csv,application/json,text/csv" hidden>
 <script id="engine">
@@ -1051,7 +1185,7 @@ var HaspotEngine = (function () {
     opts = opts || {};
     var runs = opts.runs || 500, months = opts.months || 36, seed = opts.seed != null ? opts.seed : 1;
     var world = createWorld(opts.worldSeed != null ? opts.worldSeed : 7);
-    var by18 = 0, by24 = 0, breached = 0, firstMonths = [], lowCash = [], hours24 = [];
+    var by18 = 0, by24 = 0, breached = 0, firstMonths = [], lowCash = [], hours24 = [], perRun = [];
     var profitByMonth = [], cashByMonth = [];
     for (var m = 0; m < months; m++) { profitByMonth.push([]); cashByMonth.push([]); }
     for (var i = 0; i < runs; i++) {
@@ -1066,6 +1200,8 @@ var HaspotEngine = (function () {
         cashByMonth[r.month - 1].push(r.cash);
         if (r.month === 24) hours24.push(r.founder_hours_week);
       }
+      var at24 = s.ledger[Math.min(23, s.ledger.length - 1)];
+      perRun.push({ seed: seed + i, profit24: s.insolvent ? -Infinity : (at24 ? at24.profit : 0) });
       if (s.insolvent) { breached++; low = Math.min(low, -s.creditLimit - 1); }
       if (first <= 18) by18++;
       if (first <= 24) by24++;
@@ -1090,8 +1226,173 @@ var HaspotEngine = (function () {
       p5LowestCash: percentile(lowCash, 0.05),
       pCreditBreached: breached / runs,
       medianHoursAt24: hours24.length ? percentile(hours24, 0.5) : null,
-      fan: fan, cashFan: cashFan
+      fan: fan, cashFan: cashFan, perRun: perRun
     };
+  }
+
+  // ---------- Scenario lab: strategies × economies ----------
+  var ECONOMIES = [
+    { id: 'normal', name: 'Normal economy', desc: 'The business plan\'s assumptions: 1 new advertiser per network a month, 5% churn.', overrides: {} },
+    { id: 'boom', name: 'Boom', desc: 'Local businesses spend freely: 1.5 new advertisers a month, 3% churn, anchors easier to sign.',
+      overrides: { demand: { arrivalsPerNetwork: 1.5, churnMonthly: 0.03 }, anchors: { pitchSuccess: 0.35, renewProb: 0.8 } } },
+    { id: 'recession', name: 'Recession', desc: 'Ad budgets cut: 0.6 new advertisers a month, 9% churn, anchors harder to sign and renew.',
+      overrides: { demand: { arrivalsPerNetwork: 0.6, churnMonthly: 0.09 }, anchors: { pitchSuccess: 0.15, renewProb: 0.5 } } },
+    { id: 'inflation', name: 'Cost inflation', desc: 'Kit costs +20%, host fee ₹600, data ₹250, fixed costs ₹7,000 a month.',
+      overrides: { kit: { tv: 12000, hotspot: 2600, power: 850, fitting: 950 }, opex: { hostFee: 600, data: 250 }, fixedBase: 7000 } },
+    { id: 'tight', name: 'Tight money', desc: 'Credit limit ₹50,000 at 3% a month, and only ₹25,000 a month of salary top-up.',
+      overrides: { start: { creditLimit: 50000, creditInterestMonthly: 0.03 }, growth: { salaryTopup: 25000 } } }
+  ];
+  var STRATEGIES = [
+    { id: 'monthly', name: 'Monthly slots (the plan)', desc: 'All 10 slots sold month to month at ₹500; founders at ₹300.', overrides: {} },
+    { id: 'anchor', name: 'Anchor-led', desc: '5 slots per network leased to hospitals, schools, coaching and labs at ₹450 for 12 months; 5 open slots.',
+      overrides: { anchors: { enabled: true, slotsPerNetwork: 5 } } },
+    { id: 'hybrid', name: 'Light anchors', desc: '2 slots per network for anchors (1 per client), 8 open monthly slots.',
+      overrides: { anchors: { enabled: true, slotsPerNetwork: 2, maxSlotsPerClient: 1 } } },
+    { id: 'premium', name: 'Premium price ₹600', desc: 'List price ₹600: fewer sign-ups (elasticity 1.5), more per slot.', overrides: { price: { list: 600 } } },
+    { id: 'value', name: 'Value price ₹400', desc: 'List price ₹400: more sign-ups, less per slot; fills faster.', overrides: { price: { list: 400 } } },
+    { id: 'lean', name: 'Lean infra', desc: 'Shop Wi-Fi instead of own 4G and a self-hosted signage server from month 13.',
+      overrides: { infra: { connectivity: 'shopWifi', cms: 'selfHosted', cmsSwitchMonth: 13 } } }
+  ];
+  function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  function labParams(stratId, econId) {
+    var p = merge(merge(DEFAULTS, byId(STRATEGIES, stratId).overrides), byId(ECONOMIES, econId).overrides);
+    p.growth.autoExpand = true;
+    return p;
+  }
+  // Score: chance of ₹1 lakh by m24 dominates; going bust is punished hard; later profit and hours adjust.
+  function labScore(m) {
+    return 100 * m.pLakhBy24 + 30 * m.pLakhBy18 - 150 * m.pCreditBreached + m.medianNet36 / 10000 - 5 * Math.max(0, (m.medianHoursAt24 || 0) - 4);
+  }
+  function labCell(stratId, econId, opts) {
+    opts = opts || {};
+    var months = opts.months || 36;
+    var mc = monteCarlo(labParams(stratId, econId), { runs: opts.runs || 300, months: months, seed: opts.seed != null ? opts.seed : 1, worldSeed: opts.worldSeed });
+    var at = function (fan, m) { var f = fan[Math.min(m, fan.length) - 1]; return f && f.n ? f.p50 : NaN; };
+    var sorted = mc.perRun.slice().sort(function (a, b) { return a.profit24 - b.profit24; });
+    var m = { strategy: stratId, economy: econId, runs: mc.runs, months: months,
+      pLakhBy18: mc.pLakhBy18, pLakhBy24: mc.pLakhBy24, medianMonthToLakh: mc.medianMonthToLakh,
+      p5LowestCash: mc.p5LowestCash, pCreditBreached: mc.pCreditBreached, medianHoursAt24: mc.medianHoursAt24,
+      medianNet12: at(mc.fan, 12), medianNet24: at(mc.fan, 24), medianNet36: at(mc.fan, months), medianCash36: at(mc.cashFan, months),
+      netMedianByMonth: mc.fan.map(function (f) { return f.n ? Math.round(f.p50) : null; }),
+      representativeSeed: sorted.length ? sorted[Math.floor(sorted.length / 2)].seed : 1 };
+    m.score = labScore(m);
+    return m;
+  }
+  function labSummarize(cells) {
+    var byEconomy = {}, overall = [];
+    ECONOMIES.forEach(function (e) {
+      byEconomy[e.id] = cells.filter(function (c) { return c.economy === e.id; }).sort(function (a, b) { return b.score - a.score; });
+    });
+    STRATEGIES.forEach(function (st) {
+      var mine = cells.filter(function (c) { return c.strategy === st.id; });
+      if (!mine.length) return;
+      var avg = function (k) { return mine.reduce(function (t, c) { return t + c[k]; }, 0) / mine.length; };
+      var worst = mine.slice().sort(function (a, b) { return a.score - b.score; })[0];
+      overall.push({ strategy: st.id, avgScore: avg('score'), avgP24: avg('pLakhBy24'), avgBreach: avg('pCreditBreached'),
+        worstP24: Math.min.apply(null, mine.map(function (c) { return c.pLakhBy24; })), worstEconomy: worst.economy,
+        wins: ECONOMIES.filter(function (e) { return byEconomy[e.id][0] && byEconomy[e.id][0].strategy === st.id; }).map(function (e) { return e.id; }) });
+    });
+    overall.sort(function (a, b) { return b.avgScore - a.avgScore; });
+    return { byEconomy: byEconomy, overall: overall, best: overall[0] ? overall[0].strategy : null };
+  }
+  // Month-by-month story of one representative run, as plan steps.
+  function labTimeline(stratId, econId, seed, months) {
+    var s = newGame(labParams(stratId, econId), { seed: seed });
+    runTo(s, months || 36);
+    var steps = [], L = s.ledger;
+    var p = effective(s.params);
+    s.log.slice().reverse().forEach(function (l) {
+      if (/^(Launched|Expanded)/.test(l.text)) steps.push({ month: l.month, kind: 'grow', text: l.text.replace(/\.$/, '') });
+    });
+    var firstProfit = L.filter(function (r) { return r.profit > 0; })[0];
+    if (firstProfit) steps.push({ month: firstProfit.month, kind: 'money', text: 'First month in profit (' + fmtINR(firstProfit.profit) + ')' });
+    var low = L.reduce(function (a, r) { return r.cash < a.cash ? r : a; }, L[0] || { cash: 0, month: 0 });
+    if (low) steps.push({ month: low.month, kind: 'risk', text: 'Lowest cash point: ' + fmtINR(low.cash) + (low.cash < 0 ? ' (credit in use)' : '') });
+    var lakh = L.filter(function (r) { return r.profit >= 100000; })[0];
+    if (lakh) steps.push({ month: lakh.month, kind: 'goal', text: 'Net profit passes ₹1 lakh a month (' + fmtINR(lakh.profit) + ')' });
+    var anchors = L.filter(function (r) { return r.anchors_active > 0; })[0];
+    if (anchors) steps.push({ month: anchors.month, kind: 'grow', text: 'First anchor lease running' });
+    if (p.infra.cms === 'selfHosted') steps.push({ month: p.infra.cmsSwitchMonth, kind: 'infra', text: 'Move signage to the self-hosted server' });
+    if (s.insolvent) steps.push({ month: s.insolvent.month, kind: 'risk', text: 'Ran out of credit: ' + s.insolvent.cause });
+    steps.sort(function (a, b) { return a.month - b.month; });
+    var last = L[L.length - 1] || {};
+    return { seed: seed, steps: steps, ledger: L, end: last };
+  }
+  function pctTxt(x) { return Math.round(x * 100) + '%'; }
+  // Plain-language reasons and risks for the recommended strategy.
+  function labInsights(cells, summary) {
+    var name = function (list, id) { return byId(list, id).name; };
+    var best = summary.best, bo = summary.overall[0], second = summary.overall[1];
+    var cell = function (st, ec) { return cells.filter(function (c) { return c.strategy === st && c.economy === ec; })[0]; };
+    var why = [], watch = [];
+    var bn = cell(best, 'normal'), mn = cell('monthly', 'normal');
+    if (bn) why.push('In a normal economy it reaches ₹1 lakh a month by month ' + (bn.medianMonthToLakh == null ? '—' : Math.round(bn.medianMonthToLakh)) + ' in a typical run, with a ' + pctTxt(bn.pLakhBy18) + ' chance by month 18.');
+    if (bn && mn && best !== 'monthly') why.push('That is ' + (mn.medianMonthToLakh != null && bn.medianMonthToLakh != null ? Math.round(mn.medianMonthToLakh - bn.medianMonthToLakh) + ' months sooner than' : 'ahead of') + ' the plan\'s all-monthly model (' + pctTxt(mn.pLakhBy18) + ' by month 18).');
+    var br = cell(best, 'recession'), mr = cell('monthly', 'recession');
+    if (br && mr) why.push('It holds up best when budgets are cut: ' + pctTxt(br.pLakhBy24) + ' chance of ₹1 lakh by month 24 in a recession, against ' + pctTxt(mr.pLakhBy24) + ' for all-monthly.');
+    if (second) why.push('Runner-up overall: ' + name(STRATEGIES, second.strategy) + ' (average score ' + second.avgScore.toFixed(0) + ' vs ' + bo.avgScore.toFixed(0) + ').');
+    // long-run earner in the normal economy
+    var normal = cells.filter(function (c) { return c.economy === 'normal'; }).sort(function (a, b) { return b.medianNet36 - a.medianNet36; });
+    if (normal[0] && normal[0].strategy !== best && bn)
+      watch.push(name(STRATEGIES, normal[0].strategy) + ' earns more once the network is full (median ' + fmtINR(normal[0].medianNet36) + ' a month at month 36 vs ' + fmtINR(bn.medianNet36) + '). Once both networks sell out, test that move.');
+    watch.push('The worst case is a ' + name(ECONOMIES, bo.worstEconomy).toLowerCase() + ': only ' + pctTxt(bo.worstP24) + ' chance of ₹1 lakh by month 24. If fewer than 4 slots per network are sold by month 6, slow expansion and push anchor and institution sales.');
+    if (/anchor/.test(best) || best === 'hybrid') watch.push('Anchor numbers are assumptions (25% of pitches sign, 70% renew). Check them on the first trip: if fewer than 1 in 6 institution meetings sign, fall back to all-monthly slots.');
+    var maxBreach = Math.max.apply(null, cells.filter(function (c) { return c.strategy === best; }).map(function (c) { return c.pCreditBreached; }));
+    watch.push(maxBreach > 0 ? 'Running out of credit happened in ' + pctTxt(maxBreach) + ' of runs in its worst economy. Keep the credit line open.' : 'No run ran out of credit in any economy, but keep the credit line open through the expansion months.');
+    return { why: why, watch: watch };
+  }
+  function labMarkdown(cells, summary, timeline, meta) {
+    var name = function (list, id) { return byId(list, id).name; };
+    var out = [];
+    meta = meta || {};
+    out.push('# Haspot Sim: scenario report', '');
+    out.push((meta.date ? 'Generated ' + meta.date + ' · ' : '') + (cells[0] ? cells[0].runs : 0) + ' Monte Carlo runs per scenario · ' + (cells[0] ? cells[0].months : 36) + ' months · ' +
+      STRATEGIES.length + ' strategies × ' + ECONOMIES.length + ' economies = ' + cells.length + ' scenarios.', '');
+    out.push('Every run starts the same way the plan does: ₹1,17,800 put in, 10 pharmacy screens, 5 founding advertisers, spares, and growth by the plan\'s rules (expand at 7 of 10 slots sold, Kirana after 20 pharmacy screens, up to 21 per network). Demand and failure rates are the plan\'s assumptions until the pilot calibrates them, so treat the numbers as comparisons, not forecasts.', '');
+    var best = summary.best;
+    out.push('## Recommended plan: ' + name(STRATEGIES, best), '');
+    var bo = summary.overall[0];
+    out.push(byId(STRATEGIES, best).desc, '');
+    out.push('- Average chance of ₹1 lakh net a month by month 24, across the five economies: **' + pctTxt(bo.avgP24) + '**', '- Worst economy for it: **' + name(ECONOMIES, bo.worstEconomy) + '** (' + pctTxt(bo.worstP24) + ')',
+      '- Best strategy in: ' + (bo.wins.length ? bo.wins.map(function (e) { return name(ECONOMIES, e); }).join(', ') : 'no single economy, but the most consistent overall'),
+      '- Average chance of running out of credit: ' + pctTxt(bo.avgBreach), '');
+    var ins = labInsights(cells, summary);
+    out.push('### Why this one', '');
+    ins.why.forEach(function (t) { out.push('- ' + t); });
+    out.push('', '### Watch-outs', '');
+    ins.watch.forEach(function (t) { out.push('- ' + t); });
+    out.push('');
+    if (timeline) {
+      out.push('### Month by month (typical run in a normal economy)', '');
+      timeline.steps.forEach(function (st) { out.push('- **Month ' + st.month + ':** ' + st.text); });
+      out.push('', 'At month ' + (timeline.end.month || 0) + ': ' + (timeline.end.screens_ph + timeline.end.screens_ki) + ' screens, net ' + fmtINR(timeline.end.profit || 0) + ' a month, cash ' + fmtINR(timeline.end.cash || 0) + ', about ' + (timeline.end.founder_hours_week || 0) + ' hours a week of your time.', '');
+    }
+    out.push('## Strategy ranking (all economies)', '', '| # | Strategy | Avg score | Avg P(₹1L by m24) | Worst case | Wins |', '| --- | --- | --- | --- | --- | --- |');
+    summary.overall.forEach(function (o, i) {
+      out.push('| ' + (i + 1) + ' | ' + name(STRATEGIES, o.strategy) + ' | ' + o.avgScore.toFixed(0) + ' | ' + pctTxt(o.avgP24) + ' | ' + pctTxt(o.worstP24) + ' in ' + name(ECONOMIES, o.worstEconomy) + ' | ' + o.wins.length + ' |');
+    });
+    out.push('', 'Score = 100 × P(₹1L by m24) + 30 × P(by m18) − 150 × P(out of credit) + median net at the last month ÷ ₹10,000 − 5 per founder hour a week above 4.', '');
+    out.push('## P(₹1 lakh a month by month 24)', '', '| Strategy | ' + ECONOMIES.map(function (e) { return e.name; }).join(' | ') + ' |', '| --- |' + ECONOMIES.map(function () { return ' --- |'; }).join(''));
+    STRATEGIES.forEach(function (st) {
+      out.push('| ' + st.name + ' | ' + ECONOMIES.map(function (e) {
+        var c = cells.filter(function (x) { return x.strategy === st.id && x.economy === e.id; })[0];
+        return c ? pctTxt(c.pLakhBy24) : '—';
+      }).join(' | ') + ' |');
+    });
+    out.push('');
+    ECONOMIES.forEach(function (e) {
+      out.push('## Scenario report: ' + e.name, '', e.desc, '');
+      var list = summary.byEconomy[e.id];
+      if (!list || !list.length) return;
+      out.push('Best strategy here: **' + name(STRATEGIES, list[0].strategy) + '**.', '');
+      out.push('| Strategy | P(₹1L by m18) | by m24 | Median month to ₹1L | Median net m12 / m24 / m36 | 5th-pct lowest cash | P(out of credit) | Hours/wk m24 |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+      list.forEach(function (c) {
+        out.push('| ' + name(STRATEGIES, c.strategy) + ' | ' + pctTxt(c.pLakhBy18) + ' | ' + pctTxt(c.pLakhBy24) + ' | ' + (c.medianMonthToLakh == null ? 'not reached' : Math.round(c.medianMonthToLakh)) + ' | ' +
+          [c.medianNet12, c.medianNet24, c.medianNet36].map(function (v) { return isFinite(v) ? fmtINR(v) : '—'; }).join(' / ') + ' | ' + fmtINR(c.p5LowestCash) + ' | ' + pctTxt(c.pCreditBreached) + ' | ' + (c.medianHoursAt24 == null ? '—' : c.medianHoursAt24.toFixed(1)) + ' |');
+      });
+      out.push('');
+    });
+    return out.join('\n') + '\n';
   }
 
   // ---------- CSV / JSON ----------
@@ -1128,6 +1429,7 @@ var HaspotEngine = (function () {
     paybackMonths: paybackMonths, steadyNet: steadyNet, calendarLabel: calendarLabel, calendarMonth: calendarMonth,
     soldSlots: soldSlots, anchorSlotsUsed: anchorSlotsUsed, openCapacity: function (s) { return openCapacity(s, effective(s.params)); },
     activeScreens: activeScreens, shopById: shopById, instById: instById, screenAt: screenAt, advMonthlyRate: advMonthlyRate,
+    ECONOMIES: ECONOMIES, STRATEGIES: STRATEGIES, labParams: labParams, labCell: labCell, labSummarize: labSummarize, labTimeline: labTimeline, labMarkdown: labMarkdown, labScore: labScore, labInsights: labInsights,
     monteCarlo: monteCarlo, ledgerToCSV: ledgerToCSV, csvToLedger: csvToLedger, exportState: exportState, importState: importState,
     fmtINR: fmtINR, rngNext: rngNext
   };
@@ -1170,19 +1472,25 @@ var HaspotEngine = (function () {
 
   // ---------- game lifecycle ----------
   function startGame(state) {
-    S = state; selected = null; selMsg = null; speed = 0; acc = 0;
+    S = state; selected = null; selMsg = null; speed = 0; acc = 0; reportFrom = null;
+    if (S.month === 0 && S.startCash == null) S.startCash = S.cash;
+    checkMilestones(true);
+    document.querySelectorAll('#speedbox [data-speed]').forEach(function (b) { b.classList.toggle('on', +b.dataset.speed === 0); });
     fitView(); renderAll(); autosave();
   }
   function doTick() {
     if (!S || S.insolvent) return;
     E.tick(S);
+    checkMilestones(false);
     dirty = true;
-    if (S.insolvent) { setSpeed(0); renderAll(); gameOverModal(); }
+    if (S.insolvent) { reportFrom = null; setSpeed(0); renderAll(); gameOverModal(); }
     autosave();
   }
   function setSpeed(v) {
     if (v === 4) { jumpModal(); return; }
+    var wasRunning = speed >= 1 && speed <= 3;
     speed = v; acc = 0;
+    if (wasRunning && v === 0) setTimeout(maybeReport, 0);
     document.querySelectorAll('#speedbox [data-speed]').forEach(function (b) { b.classList.toggle('on', +b.dataset.speed === speed); });
     renderTime();
   }
@@ -1194,7 +1502,7 @@ var HaspotEngine = (function () {
     if (S && speed >= 1 && speed <= 3 && !modalOpen()) {
       acc += dt;
       var per = PERIOD[speed], ticked = false;
-      while (acc >= per && !S.insolvent) { acc -= per; doTick(); ticked = true; }
+      while (acc >= per && !S.insolvent) { acc -= per; noteTickStart(); doTick(); ticked = true; }
       if (ticked) renderAll(); else renderTimeBar();
     }
     if (dirty) { draw(); dirty = false; }
@@ -1215,6 +1523,8 @@ var HaspotEngine = (function () {
   function fitView() {
     resize();
     var r = canvas.getBoundingClientRect();
+    if (r.width < 50 || r.height < 50) { view.fitted = false; return; }
+    view.fitted = true;
     view.scale = Math.min((r.width - 20) / WW, (r.height - 20) / WH);
     view.ox = (r.width - WW * view.scale) / 2; view.oy = (r.height - WH * view.scale) / 2 + 8;
     dirty = true;
@@ -1509,7 +1819,8 @@ var HaspotEngine = (function () {
 
   function renderAll() {
     if (!S) return;
-    renderHUD(); renderChips(); renderTime(); renderSel(); renderNet(); renderAdv(); renderLog(); renderHint();
+    checkMilestones(false);
+    renderHUD(); renderChips(); renderTime(); renderSel(); renderNet(); renderAdv(); renderLog(); renderHint(); renderDash();
     dirty = true;
   }
 
@@ -1722,7 +2033,7 @@ var HaspotEngine = (function () {
       field('Month', '<input type="number" id="jumpN" min="' + (S.month + 1) + '" value="' + target + '">', '') +
       '<div class="foot"><button data-m="cancel">Cancel</button><button class="primary" data-m="go">Run</button></div>');
     $('jumpN').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
-    function go() { var n = Math.min(240, +$('jumpN').value || 0); closeModal(); while (S.month < n && !S.insolvent) doTick(); setSpeed(0); renderAll(); }
+    function go() { var n = Math.min(240, +$('jumpN').value || 0); closeModal(); speed = 0; noteTickStart(); while (S.month < n && !S.insolvent) doTick(); setSpeed(0); renderAll(); maybeReport(); }
     bindModal({ cancel: closeModal, go: go });
   }
 
@@ -1866,7 +2177,9 @@ var HaspotEngine = (function () {
   }
 
   function helpModal() {
-    openModal('<h2>How to play</h2><p class="lede">Haspot Sim turns the business plan into a map. Place screens in shops, sell 10-second slots, and watch cash, profit, risk and your own hours.</p>' +
+    openModal('<h2>How to play</h2><p class="lede">Haspot Sim turns the business plan into a game. Place screens in shops, sell 10-second slots, and watch cash, profit, risk and your own hours.</p>' +
+      '<p><b>Dashboard</b>: how the business is doing at a glance: goal ring, money in vs out, networks, screen health, your time, milestones and the next step to take. <b>City map</b>: where you pitch shops and install screens. <b>Scenario lab</b>: runs every strategy in every economy and recommends a plan you can play.</p>' +
+      '<p>After each month (or each run of months) a <b>report card</b> shows where the cash went, what happened and a tip. Turn it off with the checkbox in the header.</p>' +
       '<ol><li>Click a pale <b>pharmacy</b> (teal) or <b>kirana</b> (brown) and <b>Pitch host</b>. Offering the host slot raises the odds.</li>' +
       '<li>When a shop says yes, <b>Install screen</b>. It pays the kit cost now and goes live next month.</li>' +
       '<li>Advertisers arrive month by month once a network has live screens. The first five are founders at ₹300, three months prepaid.</li>' +
@@ -1915,7 +2228,7 @@ var HaspotEngine = (function () {
   });
   $('speedbox').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || !S) return;
-    if (b.id === 'nextbtn') { doTick(); renderAll(); return; }
+    if (b.id === 'nextbtn') { stepMonth(); return; }
     setSpeed(+b.dataset.speed);
   });
   var lastSpeed = 1;
@@ -1925,8 +2238,500 @@ var HaspotEngine = (function () {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     if (e.key === ' ') { e.preventDefault(); if (speed) { lastSpeed = speed; setSpeed(0); } else setSpeed(S.insolvent ? 0 : lastSpeed); }
     else if (e.key >= '1' && e.key <= '4') setSpeed(+e.key);
-    else if (e.key === 'n' || e.key === 'N') { doTick(); renderAll(); }
+    else if (e.key === 'n' || e.key === 'N') stepMonth();
     else if (e.key === 'c' || e.key === 'C') configModal();
+  });
+
+  // =====================================================================
+  // Tabs
+  // =====================================================================
+  var TAB_KEY = 'haspot-sim-tab', REPORT_KEY = 'haspot-sim-reports';
+  var tab = 'dash';
+  try { tab = localStorage.getItem(TAB_KEY) || 'dash'; } catch (e) { /* default */ }
+  if (['dash', 'map', 'analysis'].indexOf(tab) < 0) tab = 'dash';
+  function setTab(t) {
+    tab = t;
+    try { localStorage.setItem(TAB_KEY, t); } catch (e) { /* ignore */ }
+    document.body.className = 'tab-' + t;
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('on', v.id === 'view-' + t); });
+    document.querySelectorAll('.maintabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === t); b.setAttribute('aria-selected', b.dataset.tab === t); });
+    if (t === 'map') { resize(); if (!view.fitted) fitView(); dirty = true; }
+    if (t === 'analysis') renderLab();
+    if (S) renderAll();
+  }
+  document.querySelector('.maintabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setTab(b.dataset.tab); });
+
+  // =====================================================================
+  // Tooltip for anything with data-tip
+  // =====================================================================
+  document.addEventListener('mousemove', function (e) {
+    var el = e.target.closest && e.target.closest('[data-tip]'), tip = $('dtip');
+    if (!el) { tip.style.display = 'none'; return; }
+    tip.innerHTML = esc(el.getAttribute('data-tip')).replace(/\n/g, '<br>');
+    tip.style.display = 'block';
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.min(e.clientX + 14, window.innerWidth - w - 8) + 'px';
+    tip.style.top = (e.clientY + 16 + h > window.innerHeight ? e.clientY - h - 10 : e.clientY + 16) + 'px';
+  });
+
+  // =====================================================================
+  // Milestones
+  // =====================================================================
+  function screensN(s) { return s.screens.length; }
+  function lastProfit(s) { var r = s.ledger[s.ledger.length - 1]; return r ? r.profit : 0; }
+  function bestProfit(s) { return s.ledger.reduce(function (a, r) { return Math.max(a, r.profit); }, -Infinity); }
+  var MILESTONES = [
+    { id: 'host', icon: '🤝', title: 'First host', hint: 'A shop agrees to host', test: function (s) { return s.shops.some(function (x) { return x.state === 'host'; }); } },
+    { id: 'live', icon: '📺', title: 'On air', hint: 'First screen goes live', test: function (s) { return E.activeScreens(s).length > 0; } },
+    { id: 'adv', icon: '📣', title: 'First advertiser', hint: 'Sell your first slot', test: function (s) { return s.advertisers.length > 0; } },
+    { id: 'ten', icon: '🔟', title: '10 screens', hint: 'Screens', target: 10, value: screensN },
+    { id: 'profit', icon: '📈', title: 'In the black', hint: 'A month with profit > 0', test: function (s) { return s.ledger.some(function (r) { return r.profit > 0; }); } },
+    { id: 'hub', icon: '🧰', title: 'Prepared', hint: 'A hub shop with a spare TV', test: function (s) { return !!s.hubShopId && s.spares.tv > 0; } },
+    { id: 'soldout', icon: '🎟️', title: 'Sold out', hint: 'All 10 slots sold on a network', test: function (s) { var p = E.effective(s.params); return ['ph', 'ki'].some(function (n) { return E.soldSlots(s, n, true) >= p.loop.sellable; }); } },
+    { id: 'kirana', icon: '🛒', title: 'Second network', hint: 'Kirana network launched', test: function (s) { return s.screens.some(function (x) { return x.network === 'ki'; }); } },
+    { id: 'anchor', icon: '🏥', title: 'Anchor signed', hint: 'An institution leases slots', test: function (s) { return s.advertisers.some(function (a) { return a.kind === 'anchor'; }); } },
+    { id: 'half', icon: '🥈', title: '₹50k a month', hint: 'Net profit', target: 50000, value: function (s) { return Math.max(0, bestProfit(s)); }, money: true },
+    { id: 'lakh', icon: '🏆', title: '₹1 lakh a month', hint: 'Net profit', target: 100000, value: function (s) { return Math.max(0, bestProfit(s)); }, money: true },
+    { id: 'full', icon: '🏙️', title: '42 screens', hint: 'Screens', target: 42, value: screensN },
+    { id: 'debtfree', icon: '🕊️', title: 'Debt free', hint: 'Pay back all credit used', test: function (s) { return s.ledger.some(function (r) { return r.credit_used > 0; }) && s.cash >= 0 && s.ledger.length > 0; } },
+    { id: 'steady', icon: '⚙️', title: 'Smooth running', hint: '6 months at ≥ 98% uptime', test: function (s) { var L = s.ledger.slice(-6); return L.length === 6 && L.every(function (r) { return r.uptime_pct >= 98 && r.screens_ph + r.screens_ki > 0; }); } }
+  ];
+  function msDone(m, s) { return m.test ? m.test(s) : m.value(s) >= m.target; }
+  function checkMilestones(silent) {
+    if (!S) return [];
+    if (!S.achievements) S.achievements = {};
+    var fresh = [];
+    MILESTONES.forEach(function (m) {
+      if (S.achievements[m.id] != null) return;
+      if (msDone(m, S)) {
+        S.achievements[m.id] = S.month; fresh.push(m);
+        if (!silent) { S.log.unshift({ month: S.month, text: 'Milestone: ' + m.title + '!', kind: 'good' }); toast(m); }
+      }
+    });
+    return fresh;
+  }
+  var toastPending = [], toastTimer = null;
+  function toast(m) {
+    toastPending.push(m);
+    if (!toastTimer) toastTimer = setTimeout(flushToasts, 0);
+  }
+  function flushToasts() {
+    toastTimer = null;
+    var batch = toastPending; toastPending = [];
+    $('toasts').innerHTML = '';
+    var show = batch.slice(-3);
+    if (batch.length > 3) show = [{ icon: '✨', title: (batch.length - 2) + ' milestones unlocked', hint: 'See them all on the Dashboard', more: true }].concat(batch.slice(-2));
+    show.forEach(function (m, i) {
+      var el = document.createElement('div');
+      el.className = 'toast';
+      el.innerHTML = '<div class="ic">' + m.icon + '</div><div><b>' + (m.more ? '' : 'Milestone: ') + esc(m.title) + '</b><small>' + esc(m.hint) + (m.target ? ': ' + (m.money ? fmt(m.target) : m.target) : '') + '</small></div>';
+      $('toasts').appendChild(el);
+      setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 350); }, 4200 + i * 300);
+    });
+  }
+
+  // =====================================================================
+  // Tips: one rule list shared by the dashboard and the report card
+  // =====================================================================
+  function tips(s) {
+    var p = E.effective(s.params), r = s.ledger[s.ledger.length - 1], out = [];
+    var limit = s.creditLimit >= 1e14 ? Infinity : s.creditLimit;
+    var used = Math.max(0, -s.cash);
+    if (!s.screens.length) {
+      if (!s.shops.some(function (x) { return x.state === 'host'; })) out.push({ text: 'Pitch a pharmacy on the City map. Offering the host slot raises your odds to 50%.', btn: 'Open City map', act: 'map' });
+      else out.push({ text: 'A shop said yes. Install your first screen there, and it starts earning next month.', btn: 'Open City map', act: 'map' });
+      return out;
+    }
+    if (isFinite(limit) && used > 0.7 * limit) out.push({ text: 'Credit is ' + Math.round(used / limit * 100) + '% used. Hold off on new screens until cash recovers.', btn: 'See ledger', act: 'ledger', tone: 'bad' });
+    E.gateStatus(s).forEach(function (g) { out.push({ text: g.text + '. Time to add screens: each new one earns from the slots you have already sold.', btn: p.growth.autoExpand ? null : 'Open City map', act: 'map' }); });
+    if (r && r.uptime_pct < 97) out.push({ text: 'Uptime was ' + r.uptime_pct + '% last month, and dark screens cost refunds. ' + (s.hubShopId ? 'Keep a spare TV at the hub.' : 'Mark a hub shop and buy a spare TV.'), btn: 'Open City map', act: 'map' });
+    else if (!s.hubShopId) out.push({ text: 'No hub shop yet. Mark one host as the hub so a spare TV turns a 10-day outage into 2 days.', btn: 'Open City map', act: 'map' });
+    if (r && r.founder_hours_week > 4) out.push({ text: 'You are spending ' + r.founder_hours_week.toFixed(1) + ' hours a week. Turning on Apps Script halves the monthly close.', btn: 'Open Config', act: 'config' });
+    (s.notices || []).filter(function (n) { return n.kind === 'warn'; }).forEach(function (n) { out.push({ text: n.text + '. Spread the risk across more clients.', act: null }); });
+    var full = ['ph', 'ki'].filter(function (n) { return s.screens.some(function (x) { return x.network === n; }) && E.soldSlots(s, n, true) >= p.loop.sellable; });
+    if (full.length) out.push({ text: E.NETWORK_NAMES[full[0]] + ' is sold out. Try raising its list price; the Scenario lab suggests ₹600 earns more once networks are full.', btn: 'Open City map', act: 'map' });
+    if (r && r.profit >= 100000) out.push({ text: 'You have hit ₹1 lakh a month. Check the Scenario lab to see how your plan holds up in a recession.', btn: 'Open Scenario lab', act: 'analysis' });
+    if (!out.length) out.push({ text: 'Things are steady. Let a few months run and watch the slots fill.', btn: null });
+    return out;
+  }
+  function doTipAction(act) {
+    if (act === 'map') { closeModal(); setTab('map'); }
+    if (act === 'config') configModal();
+    if (act === 'ledger') ledgerModal();
+    if (act === 'analysis') { closeModal(); setTab('analysis'); }
+    if (act === 'dash') { closeModal(); setTab('dash'); }
+  }
+
+  // =====================================================================
+  // Small SVG helpers
+  // =====================================================================
+  function spark(vals, color) {
+    vals = vals.filter(function (v) { return v != null && isFinite(v); });
+    if (vals.length < 2) return '<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="26" y2="26" stroke="#E1D6C1" stroke-width="1"/></svg>';
+    var lo = Math.min.apply(null, vals.concat([0])), hi = Math.max.apply(null, vals); if (hi === lo) hi = lo + 1;
+    var pts = vals.map(function (v, i) { return (i / (vals.length - 1) * 98 + 1).toFixed(1) + ',' + (27 - (v - lo) / (hi - lo) * 24).toFixed(1); });
+    var zero = 27 - (0 - lo) / (hi - lo) * 24;
+    var last = pts[pts.length - 1].split(',');
+    return '<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">' +
+      (lo < 0 ? '<line x1="0" x2="100" y1="' + zero + '" y2="' + zero + '" stroke="#CDBFA6" stroke-width="1" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>' : '') +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + (color || '#2B3D38') + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>' +
+      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.4" fill="' + (color || '#2B3D38') + '"/></svg>';
+  }
+  function ring(frac, label, sub, color) {
+    var r = 60, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac));
+    return '<svg viewBox="0 0 150 150" role="img" aria-label="' + esc(label + ' ' + sub) + '"><circle cx="75" cy="75" r="' + r + '" fill="none" stroke="#ECE4D4" stroke-width="14"/>' +
+      (f > 0 ? '<circle cx="75" cy="75" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + (c * f).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 75 75)"/>' : '') +
+      '<text x="75" y="74" text-anchor="middle" style="font-size:28px;font-weight:800;fill:#14231F">' + esc(label) + '</text>' +
+      '<text x="75" y="96" text-anchor="middle" style="font-size:11.5px;fill:#5B6863">' + esc(sub) + '</text></svg>';
+  }
+  // Revenue vs expenses bars with a net line; hover per month.
+  var C_REV = '#2a78d6', C_EXP = '#eb6834', C_NET = '#1baf7a';
+  function moneyChart(L) {
+    var w = 760, h = 250, Lp = 58, R = 40, T = 12, B = 26;
+    var vals = [0, 100000];
+    L.forEach(function (r) { vals.push(r.revenue, r.revenue - r.profit, r.profit); });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var step = niceStep((hi - lo) / 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    var n = L.length, slot = (w - Lp - R) / Math.max(n, 1), bw = Math.max(1.5, Math.min(14, slot / 2 - 2));
+    var Y = function (v) { return T + (1 - (v - lo) / (hi - lo)) * (h - T - B); };
+    var X = function (i) { return Lp + slot * (i + 0.5); };
+    var o = '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Revenue, expenses and net profit by month">';
+    for (var v = lo; v <= hi + 1e-9; v += step) {
+      o += '<line x1="' + Lp + '" x2="' + (w - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + (Math.abs(v) < 1e-9 ? '#14231F' : '#ECE4D4') + '"/>' +
+        '<text x="' + (Lp - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + compact(v) + '</text>';
+    }
+    o += '<line x1="' + Lp + '" x2="' + (w - R) + '" y1="' + Y(100000) + '" y2="' + Y(100000) + '" stroke="#14231F" stroke-dasharray="5 4" opacity=".55"/>' +
+      '<text x="' + (w - R) + '" y="' + (Y(100000) - 5) + '" text-anchor="end" style="fill:#14231F">₹1 lakh goal</text>';
+    var every = n > 24 ? 6 : n > 12 ? 3 : 1;
+    L.forEach(function (r, i) {
+      var exp = r.revenue - r.profit, x = X(i);
+      var bar = function (x0, val, col) { var y0 = Y(Math.max(0, val)), y1 = Y(Math.min(0, val)); return '<rect x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, y1 - y0).toFixed(1) + '" rx="' + Math.min(3, bw / 3) + '" fill="' + col + '"/>'; };
+      o += bar(x - bw - 1, r.revenue, C_REV) + bar(x + 1, exp, C_EXP);
+      if (i % every === 0 || i === n - 1) o += '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle">m' + r.month + '</text>';
+    });
+    var d = L.map(function (r, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(r.profit).toFixed(1); }).join('');
+    o += '<path d="' + d + '" fill="none" stroke="#FFFDF8" stroke-width="5"/><path d="' + d + '" fill="none" stroke="' + C_NET + '" stroke-width="2.4"/>';
+    if (n) { var lr = L[n - 1]; o += '<circle cx="' + X(n - 1) + '" cy="' + Y(lr.profit) + '" r="4" fill="' + C_NET + '" stroke="#FFFDF8" stroke-width="2"/><text x="' + (X(n - 1) + 7) + '" y="' + (Y(lr.profit) + 4) + '" style="fill:#14231F;font-weight:700">Net</text>'; }
+    L.forEach(function (r, i) {
+      o += '<rect x="' + (X(i) - slot / 2) + '" y="' + T + '" width="' + slot + '" height="' + (h - T - B) + '" fill="transparent" data-tip="Month ' + r.month + ' · ' + E.calendarLabel(P(), r.month) + '\nRevenue ' + fmt(r.revenue) + '\nExpenses ' + fmt(r.revenue - r.profit) + '\nNet ' + fmt(r.profit) + '\nCash ' + fmt(r.cash) + '"/>';
+    });
+    return o + '</svg>';
+  }
+
+  // =====================================================================
+  // Dashboard
+  // =====================================================================
+  function delta(cur, prev, goodUp, f) {
+    if (prev == null || cur == null) return '<div class="d flat">&nbsp;</div>';
+    var dlt = cur - prev;
+    if (Math.abs(dlt) < 0.05) return '<div class="d flat">— no change</div>';
+    var good = goodUp ? dlt > 0 : dlt < 0;
+    return '<div class="d ' + (good ? 'up' : 'down') + '">' + (dlt > 0 ? '▲ ' : '▼ ') + f(Math.abs(dlt)) + ' vs last month</div>';
+  }
+  function renderDash() {
+    if (!S || tab !== 'dash') return;
+    var p = P(), L = S.ledger, r = L[L.length - 1], pr = L[L.length - 2];
+    var last12 = L.slice(-12);
+    var col = function (k) { return last12.map(function (x) { return x[k]; }); };
+    var ph = S.screens.filter(function (x) { return x.network === 'ph'; }).length, ki = S.screens.length - ph;
+    var soldPh = E.soldSlots(S, 'ph', true), soldKi = E.soldSlots(S, 'ki', true);
+    var liveNets = (ph ? 1 : 0) + (ki ? 1 : 0);
+    var fill = liveNets ? ((ph ? soldPh : 0) + (ki ? soldKi : 0)) / (liveNets * p.loop.sellable) : 0;
+    var net = r ? r.profit : 0;
+    var best = L.reduce(function (a, x) { return x.profit > a.profit ? x : a; }, { profit: -Infinity, month: 0 });
+    var goalHit = L.filter(function (x) { return x.profit >= 100000; })[0];
+    var tip = tips(S)[0];
+    var h = '<div class="dash">';
+
+    // hero
+    var headline = !S.screens.length ? 'Welcome! Your screen network starts on the City map.'
+      : goalHit ? 'Goal reached in month ' + goalHit.month + '. Net this month: ' + fmt(net) + '.'
+      : net > 0 ? 'You are ' + compact(100000 - net) + ' a month away from the ₹1 lakh goal.'
+      : r ? 'Building up: net ' + fmt(net) + ' last month. Slots fill as advertisers arrive.' : 'Screens are installed. Advance a month to start earning.';
+    h += '<div class="card hero c12"><div class="grow"><div class="big">' + esc(headline) + '</div><div class="small">' + (S.month ? 'Month ' + S.month + ' · ' + E.calendarLabel(p, S.month) : 'Month 0 · before launch') +
+      ' · ' + (p.mode === 'plan' ? 'plan mode' : p.mode === 'classic' ? 'classic rules' : 'stochastic') + (S.presetId ? ' · ' + S.presetId : '') + ' · auto-expand ' + (p.growth.autoExpand ? 'on' : 'off') + '</div></div>' +
+      '<button data-d="map">Place screens</button><button data-d="ledger">Ledger</button><button class="accent" data-d="next"' + (S.insolvent ? ' disabled' : '') + '>Next month ▸</button></div>';
+
+    // KPI tiles
+    var tiles = [
+      ['Cash', fmt(S.cash), delta(r && r.cash, pr && pr.cash, true, compact), spark(col('cash'))],
+      ['Net / month', fmt(net), delta(r && r.profit, pr && pr.profit, true, compact), spark(col('profit'), net < 0 ? '#9A3A24' : '#1E6B3F')],
+      ['Revenue / month', fmt(r ? r.revenue : 0), delta(r && r.revenue, pr && pr.revenue, true, compact), spark(col('revenue'), C_REV)],
+      ['Screens', ph + ki + '<span style="font-size:13px;color:var(--muted);font-weight:600"> / 42</span>', delta(r && (r.screens_ph + r.screens_ki), pr && (pr.screens_ph + pr.screens_ki), true, function (x) { return x; }), spark(last12.map(function (x) { return x.screens_ph + x.screens_ki; }))],
+      ['Slots filled', Math.round(fill * 100) + '%', delta(r && (r.slots_sold_ph + r.slots_sold_ki), pr && (pr.slots_sold_ph + pr.slots_sold_ki), true, function (x) { return x + ' slots'; }), spark(last12.map(function (x) { return x.slots_sold_ph + x.slots_sold_ki; }))],
+      ['Uptime', (r ? r.uptime_pct : 100) + '%', delta(r && r.uptime_pct, pr && pr.uptime_pct, true, function (x) { return x.toFixed(1) + ' pts'; }), spark(col('uptime_pct'))],
+      ['Your hours / week', (r ? r.founder_hours_week : 0).toFixed(1), delta(r && r.founder_hours_week, pr && pr.founder_hours_week, false, function (x) { return x.toFixed(1) + ' h'; }), spark(col('founder_hours_week'))]
+    ];
+    h += '<div class="c12 tiles">' + tiles.map(function (t) { return '<div class="tile"><div class="k">' + t[0] + '</div><div class="v">' + t[1] + '</div>' + t[2] + t[3] + '</div>'; }).join('') + '</div>';
+
+    // goal ring
+    var frac = Math.max(0, net) / 100000;
+    h += '<div class="card c4 goalcard"><h2>Goal: ₹1 lakh a month</h2><div class="sub">Net profit after every cost</div><div class="ringwrap">' +
+      ring(frac, Math.round(frac * 100) + '%', compact(Math.max(0, net)) + ' of ₹1L', frac >= 1 ? '#2F7D4F' : '#2a78d6') +
+      '<div class="facts"><div class="row2"><span>Best month</span><span>' + (isFinite(best.profit) ? fmt(best.profit) + ' (m' + best.month + ')' : '—') + '</span></div>' +
+      '<div class="row2"><span>Plan target</span><span>month 18</span></div>' +
+      '<div class="row2"><span>Months played</span><span>' + S.month + '</span></div></div></div>' +
+      '<div class="status' + (goalHit ? ' good' : '') + '">' + (goalHit ? '🏆 Reached in month ' + goalHit.month + (goalHit.month <= 18 ? ', on or ahead of plan' : '') : net > 0 ? compact(100000 - net) + ' to go' : 'Not in profit yet') + '</div></div>';
+
+    // money chart
+    h += '<div class="card c8"><h2>Money in vs out <span class="legendmini"><span><i class="sq" style="background:' + C_REV + '"></i>Revenue</span><span><i class="sq" style="background:' + C_EXP + '"></i>Expenses</span><span><i style="background:' + C_NET + '"></i>Net profit</span></span></h2><div class="sub">Hover a month for details</div>' +
+      (L.length ? moneyChart(L.slice(-36)) : '<div class="emptycard">No months played yet. Press <b>Next month</b> to see money flow in.</div>') + '</div>';
+
+    // next step
+    h += '<div class="card c4 tipcard"><h2>Next step</h2><div class="tiptext">' + esc(tip.text) + '</div>' + (tip.btn ? '<button class="primary" data-d="tip" data-act2="' + tip.act + '">' + esc(tip.btn) + '</button>' : '') + '</div>';
+
+    // where the money goes
+    if (r) {
+      var parts = [['Host fees', r.host_fees], ['Hardware reserve', r.reserve], ['Fixed (travel, tools, CA)', r.fixed], ['Licences & software', r.licences], ['Mobile data', r.data], ['Payment fees', r.gateway_fees], ['Credit interest', r.interest]].filter(function (x) { return x[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; });
+      var max = parts.length ? parts[0][1] : 1, tot = parts.reduce(function (a, x) { return a + x[1]; }, 0);
+      h += '<div class="card c4"><h2>Where the money goes</h2><div class="sub">Last month: ' + fmt(tot) + ' of costs</div>' +
+        parts.map(function (x) { return '<div class="hbar" data-tip="' + x[0] + ': ' + fmt(x[1]) + ' (' + Math.round(x[1] / tot * 100) + '%)"><span>' + x[0] + '</span><span class="tr"><i style="width:' + (x[1] / max * 100).toFixed(1) + '%"></i></span><span>' + compact(x[1]) + '</span></div>'; }).join('') + '</div>';
+    } else h += '<div class="card c4"><h2>Where the money goes</h2><div class="emptycard">Costs appear after your first month.</div></div>';
+
+    // cash & credit
+    var limit = S.creditLimit >= 1e14 ? null : S.creditLimit, used = Math.max(0, -S.cash);
+    var runway = net < 0 ? (S.cash + (limit || 0)) / -net : null;
+    h += '<div class="card c4"><h2>Cash & credit</h2><div class="sub">' + (used ? 'Using ' + fmt(used) + ' of credit' : 'No credit in use') + '</div>' +
+      (L.length > 1 ? chart({ title: 'Cash by month', h: 120, w: 380, series: [{ values: L.slice(-36).map(function (x) { return x.cash; }), color: '#14231F' }] }) : '') +
+      (limit ? '<div class="meter"><i style="width:' + Math.min(100, used / limit * 100) + '%;background:' + (used / limit > 0.7 ? '#B5523B' : '#2a78d6') + '"></i></div><div class="meterlbl"><span>Credit used ' + compact(used) + '</span><span>limit ' + compact(limit) + '</span></div>' : '<div class="meterlbl"><span>Credit limit: unlimited (plan mode)</span></div>') +
+      '<div class="status' + (runway == null ? ' good' : '') + '">' + (runway == null ? 'Cash is growing' : '⚠ At this loss rate, money and credit last about ' + Math.max(0, runway).toFixed(1) + ' months') + '</div></div>';
+
+    // networks
+    h += '<div class="card c6"><h2>Networks</h2>';
+    ['ph', 'ki'].forEach(function (nt) {
+      var n = S.screens.filter(function (x) { return x.network === nt; }).length, sold = E.soldSlots(S, nt, true), anc = E.anchorSlotsUsed(S, nt);
+      var gate = E.gateStatus(S).filter(function (g) { return g.text.indexOf(E.NETWORK_NAMES[nt]) === 0; })[0];
+      var pill = !n ? '<span class="pill">not launched</span>' : n >= p.growth.maxPerNetwork ? '<span class="pill ok">full size</span>' : gate ? '<span class="pill go">ready to expand</span>' : '<span class="pill">' + (p.growth.expandWhenSold - sold) + ' more slots to expand</span>';
+      var blocks = '';
+      for (var i = 0; i < p.loop.sellable; i++) blocks += '<i class="' + (i < anc ? 'a' : i < sold ? 'f' : '') + '" data-tip="' + (i < anc ? 'Anchor lease' : i < sold ? 'Sold slot' : 'Open slot') + '"></i>';
+      h += '<div class="netrow"><div class="top"><span class="name">' + E.NETWORK_NAMES[nt] + '</span>' + pill + '</div>' +
+        '<div class="meter" data-tip="' + n + ' of ' + p.growth.maxPerNetwork + ' screens"><i style="width:' + (n / p.growth.maxPerNetwork * 100) + '%;background:#2a78d6"></i></div><div class="meterlbl"><span>' + n + ' screens</span><span>max ' + p.growth.maxPerNetwork + '</span></div>' +
+        '<div class="blocks">' + blocks + '</div><div class="meterlbl" style="margin-top:3px"><span>' + sold + ' of ' + p.loop.sellable + ' slots sold' + (anc ? ' (' + anc + ' anchor)' : '') + '</span><span>' + fmt((nt === 'ph' ? (p.price.byNetwork && p.price.byNetwork.ph) : (p.price.byNetwork && p.price.byNetwork.ki)) || p.price.list) + ' / slot / screen</span></div></div>';
+    });
+    h += '</div>';
+
+    // screen health
+    var cnt = { live: 0, dark: 0, failed: 0, pending: 0 };
+    var dots = S.screens.map(function (sc) {
+      var st = sc.installedMonth >= S.month ? 'pending' : sc.status; cnt[st]++;
+      var shop = E.shopById(S, sc.shopId);
+      return '<i class="st-' + st + '" data-tip="' + esc(shop ? shop.name : '') + '\n' + { live: 'Live', dark: sc.darkDaysThisMonth + ' dark days', failed: 'Failed: waiting for a swap', pending: 'Installed, live next month' }[st] + '"></i>';
+    }).join('');
+    h += '<div class="card c3"><h2>Screen health</h2><div class="sub">' + (S.screens.length ? S.screens.length + ' screens · spares at hub: ' + (S.hubShopId ? S.spares.tv + ' TV, ' + S.spares.hotspot + ' hotspot' : 'no hub yet') : 'No screens yet') + '</div>' +
+      '<div class="dots">' + (dots || '<span class="empty">—</span>') + '</div><div class="legendmini"><span><i class="st-live"></i>Live ' + cnt.live + '</span><span><i class="st-dark"></i>Dark days ' + cnt.dark + '</span><span><i class="st-failed"></i>Failed ' + cnt.failed + '</span><span><i class="st-pending"></i>Pending ' + cnt.pending + '</span></div></div>';
+
+    // founder time
+    var hrs = r ? r.founder_hours_week : 0;
+    h += '<div class="card c3"><h2>Your time</h2><div class="sub">Hours a week running Haspot</div><div class="v" style="font-size:30px;font-weight:800">' + hrs.toFixed(1) + ' h</div>' +
+      '<div class="meter"><i style="width:' + Math.min(100, hrs / 8 * 100) + '%;background:' + (hrs > 4 ? '#B5523B' : '#2F7D4F') + '"></i><b style="left:50%"></b></div><div class="meterlbl"><span>0</span><span>target 4 h</span><span>8 h</span></div>' +
+      '<div class="status' + (hrs <= 4 ? ' good' : '') + '">' + (hrs <= 4 ? 'Within the 4-hour target' : 'Over target: automate the monthly close') + '</div></div>';
+
+    // milestones
+    var got = S.achievements || {};
+    var nGot = MILESTONES.filter(function (m) { return got[m.id] != null; }).length;
+    h += '<div class="card c8"><h2>Milestones <span class="pill' + (nGot ? ' ok' : '') + '">' + nGot + ' of ' + MILESTONES.length + '</span></h2><div class="sub">Badges unlock as your network grows</div><div class="badges">' +
+      MILESTONES.map(function (m) {
+        var on = got[m.id] != null, prog = '';
+        if (!on && m.target) { var v = m.value(S); prog = (m.money ? compact(v) + ' / ' + compact(m.target) : Math.min(v, m.target) + ' / ' + m.target); }
+        return '<div class="badge' + (on ? ' on' : '') + '" data-tip="' + esc(m.title + ': ' + m.hint + (m.target ? ' ' + (m.money ? fmt(m.target) : m.target) : '')) + '"><div class="ic">' + (on ? m.icon : '🔒') + '</div><div class="bt">' + esc(m.title) + '</div><div class="bs">' + (on ? 'month ' + got[m.id] : prog || esc(m.hint)) + '</div></div>';
+      }).join('') + '</div></div>';
+
+    // feed
+    h += '<div class="card c4"><h2>What happened</h2><ul class="feed">' + (S.log.slice(0, 9).map(function (l) {
+      return '<li class="' + l.kind + '"><span class="ic">' + ({ good: '✓', warn: '!', bad: '✕' }[l.kind] || 'i') + '</span><span class="m">m' + l.month + '</span><span>' + esc(l.text) + '</span></li>';
+    }).join('') || '<li class="empty">Nothing yet.</li>') + '</ul></div>';
+
+    h += '</div>';
+    $('view-dash').innerHTML = h;
+  }
+  $('view-dash').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-d]'); if (!b || !S) return;
+    var d = b.dataset.d;
+    if (d === 'map') setTab('map');
+    if (d === 'ledger') ledgerModal();
+    if (d === 'next') stepMonth();
+    if (d === 'tip') doTipAction(b.dataset.act2);
+  });
+
+  // =====================================================================
+  // Monthly report card
+  // =====================================================================
+  var reportFrom = null;
+  function reportsOn() { try { return localStorage.getItem(REPORT_KEY) !== 'off'; } catch (e) { return true; } }
+  $('reportToggle').checked = reportsOn();
+  $('reportToggle').addEventListener('change', function () { try { localStorage.setItem(REPORT_KEY, this.checked ? 'on' : 'off'); } catch (e) { /* ignore */ } });
+  function noteTickStart() { if (reportFrom == null && S) reportFrom = S.month + 1; }
+  function maybeReport() {
+    var from = reportFrom; reportFrom = null;
+    if (!S || S.insolvent || from == null || S.month < from || !reportsOn()) return;
+    reportModal(from, S.month);
+  }
+  function stepMonth() { if (!S || S.insolvent) return; noteTickStart(); doTick(); renderAll(); maybeReport(); }
+
+  function waterfall(items) {
+    // items: [label, value, kind] kind: 'total' | 'delta'
+    var w = 520, rowH = 30, Lw = 150, R = 80, h = items.length * rowH + 6;
+    var run = 0, xs = [];
+    items.forEach(function (it) { if (it[2] === 'total') { xs.push([0, it[1]]); run = it[1]; } else { xs.push([run, run + it[1]]); run += it[1]; } });
+    var all = [0]; xs.forEach(function (x) { all.push(x[0], x[1]); });
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all); if (hi === lo) hi = lo + 1;
+    var X = function (v) { return Lw + (v - lo) / (hi - lo) * (w - Lw - R); };
+    var o = '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Cash waterfall">';
+    o += '<line x1="' + X(0) + '" x2="' + X(0) + '" y1="0" y2="' + h + '" stroke="#CDBFA6"/>';
+    items.forEach(function (it, i) {
+      var a = Math.min(xs[i][0], xs[i][1]), b = Math.max(xs[i][0], xs[i][1]), y = i * rowH + 6;
+      var col = it[2] === 'total' ? '#2B3D38' : it[1] >= 0 ? C_REV : C_EXP;
+      o += '<text x="0" y="' + (y + 15) + '" style="fill:#14231F;font-size:12.5px">' + esc(it[0]) + '</text>' +
+        '<rect x="' + X(a) + '" y="' + y + '" width="' + Math.max(2, X(b) - X(a)) + '" height="20" rx="3" fill="' + col + '"/>' +
+        '<text x="' + (X(b) + 6) + '" y="' + (y + 15) + '" style="fill:#14231F;font-weight:700;font-size:12px">' + (it[2] === 'total' ? fmt(it[1]) : (it[1] >= 0 ? '+' : '−') + compact(Math.abs(it[1])).replace('−', '')) + '</text>';
+    });
+    return o + '</svg>';
+  }
+  function reportModal(a, b) {
+    var p = P(), rows = S.ledger.filter(function (r) { return r.month >= a && r.month <= b; });
+    if (!rows.length) return;
+    var last = rows[rows.length - 1];
+    var prevRow = S.ledger.filter(function (r) { return r.month === a - 1; })[0];
+    var open = prevRow ? prevRow.cash : (S.startCash != null ? S.startCash : rows[0].cash - rows[0].profit);
+    var topup = 0, rev = 0, prof = 0;
+    rows.forEach(function (r) { topup += r.month <= p.growth.topupMonths ? p.growth.salaryTopup : 0; rev += r.revenue; prof += r.profit; });
+    var costs = rev - prof, other = last.cash - open - topup - prof;
+    var span = a === b ? 'Month ' + b + ' · ' + E.calendarLabel(p, b) : 'Months ' + a + '–' + b + ' · ' + E.calendarLabel(p, a) + ' to ' + E.calendarLabel(p, b);
+    var stars = 1 + (last.profit > 0 ? 1 : 0) + (last.profit >= 100000 || (prevRow && last.profit > prevRow.profit && last.uptime_pct >= 98) ? 1 : 0);
+    var base = prevRow || { monthly_advertisers: 0, anchors_active: 0, screens_ph: 0, screens_ki: 0, uptime_pct: 100 };
+    var dAdv = last.monthly_advertisers - base.monthly_advertisers, dAnc = last.anchors_active - base.anchors_active;
+    var dScr = last.screens_ph + last.screens_ki - base.screens_ph - base.screens_ki;
+    var events = S.log.filter(function (l) { return l.month >= a && l.month <= b && !/^Milestone/.test(l.text); }).slice(0, 10);
+    var ms = MILESTONES.filter(function (m) { var g = (S.achievements || {})[m.id]; return g != null && g >= a - (a === 1 ? 1 : 0) && g <= b; });
+    var tp = tips(S).slice(0, 2);
+    var html = '<h2>Report card <span class="stars" aria-label="' + stars + ' of 3 stars">' + '★★★'.slice(0, stars) + '<span style="color:#CDBFA6">' + '★★★'.slice(stars) + '</span></span></h2><p class="lede">' + span + '</p>' +
+      '<div class="kpis3"><div><b class="' + (last.profit < 0 ? 'neg' : '') + '">' + fmt(last.profit) + '</b><span>net profit' + (a === b ? '' : ' (last month)') + '</span></div><div><b>' + fmt(last.revenue) + '</b><span>revenue</span></div><div><b>' + last.uptime_pct + '%</b><span>uptime</span></div></div>' +
+      '<div class="rc-grid"><div><h3>Where the cash went</h3>' +
+      waterfall([['Opening cash', open, 'total'], ['Salary top-up', topup], ['Revenue', rev], ['Running costs', -costs], ['Screens & other', other], ['Closing cash', last.cash, 'total']].filter(function (x) { return x[2] === 'total' || Math.abs(x[1]) >= 1; })) +
+      '<h3>Changes</h3><div class="facts">' +
+      '<div class="row2"><span>Advertisers</span><span>' + (dAdv >= 0 ? '+' : '') + dAdv + ' (now ' + last.monthly_advertisers + ')</span></div>' +
+      '<div class="row2"><span>Anchor leases</span><span>' + (dAnc >= 0 ? '+' : '') + dAnc + ' (now ' + last.anchors_active + ')</span></div>' +
+      '<div class="row2"><span>Screens</span><span>' + (dScr >= 0 ? '+' : '') + dScr + ' (now ' + (last.screens_ph + last.screens_ki) + ')</span></div>' +
+      '<div class="row2"><span>Your time</span><span>' + last.founder_hours_week.toFixed(1) + ' h / week</span></div></div></div>' +
+      '<div><h3>What happened</h3><ul class="feed">' + (events.map(function (l) { return '<li class="' + l.kind + '"><span class="ic">' + ({ good: '✓', warn: '!', bad: '✕' }[l.kind] || 'i') + '</span><span class="m">m' + l.month + '</span><span>' + esc(l.text) + '</span></li>'; }).join('') || '<li class="empty">A quiet month.</li>') + '</ul>' +
+      (ms.length ? '<h3>Milestones</h3><div class="badges">' + ms.map(function (m) { return '<div class="badge on"><div class="ic">' + m.icon + '</div><div class="bt">' + esc(m.title) + '</div></div>'; }).join('') + '</div>' : '') +
+      '<h3>Tip for next month</h3>' + tp.map(function (t) { return '<div class="msg" style="background:#FFF6E3">' + esc(t.text) + '</div>'; }).join('') + '</div></div>' +
+      '<div class="foot"><label class="loopkey" style="margin-right:auto"><input type="checkbox" id="rcOff"> Don\'t show after each month</label><button data-m="ledger">View ledger</button><button data-m="dash">Open dashboard</button><button class="primary" data-m="close">Continue</button></div>';
+    openModal(html, true);
+    $('rcOff').addEventListener('change', function () { try { localStorage.setItem(REPORT_KEY, this.checked ? 'off' : 'on'); } catch (e) { /* ignore */ } $('reportToggle').checked = !this.checked; });
+    bindModal({ close: closeModal, ledger: function () { ledgerModal(); }, dash: function () { closeModal(); setTab('dash'); } });
+  }
+
+  // =====================================================================
+  // Scenario lab
+  // =====================================================================
+  var lab = null, labRunning = false;
+  try { var cached = localStorage.getItem('haspot-sim-lab'); if (cached) lab = JSON.parse(cached); } catch (e) { lab = null; }
+  function sName(id) { var s = E.STRATEGIES.filter(function (x) { return x.id === id; })[0]; return s ? s.name : id; }
+  function eName(id) { var s = E.ECONOMIES.filter(function (x) { return x.id === id; })[0]; return s ? s.name : id; }
+  function heatColor(v) { // sequential single hue (blue), light → dark
+    var a = [234, 242, 252], b = [22, 70, 140], t = Math.max(0, Math.min(1, v));
+    return 'rgb(' + a.map(function (x, i) { return Math.round(x + (b[i] - x) * t); }).join(',') + ')';
+  }
+  function renderLab() {
+    var el = $('view-analysis');
+    var h = '<div class="dash"><div class="card hero c12"><div class="grow"><div class="big">Scenario lab</div><div class="small">Runs every strategy in every economy (' + E.STRATEGIES.length + ' × ' + E.ECONOMIES.length + ' = ' + E.STRATEGIES.length * E.ECONOMIES.length +
+      ' scenarios) with hundreds of random runs each, writes a report for each economy, and picks the plan that holds up best.</div></div>' +
+      '<label style="color:#B9C3BD">Runs per scenario <select id="labRuns" style="color:var(--ink)"><option>100</option><option selected>200</option><option>300</option><option>500</option></select></label>' +
+      '<label style="color:#B9C3BD">Months <select id="labMonths" style="color:var(--ink)"><option>24</option><option selected>36</option></select></label>' +
+      '<button class="accent" data-l="run"' + (labRunning ? ' disabled' : '') + '>' + (lab ? 'Run again' : 'Run all scenarios') + '</button>' +
+      '<button data-l="mc">Single Monte Carlo…</button><button data-l="compare">Compare two…</button></div>' +
+      '<div class="c12" id="labProg" style="display:none"><div class="lab-progress"><i></i></div><div class="loopkey" id="labProgTxt"></div></div>';
+    if (!lab) {
+      h += '<div class="card c6"><h2>Economies</h2>' + E.ECONOMIES.map(function (e) { return '<div class="netrow"><div class="name">' + esc(e.name) + '</div><div class="sub" style="margin:2px 0 0">' + esc(e.desc) + '</div></div>'; }).join('') + '</div>' +
+        '<div class="card c6"><h2>Strategies</h2>' + E.STRATEGIES.map(function (e) { return '<div class="netrow"><div class="name">' + esc(e.name) + '</div><div class="sub" style="margin:2px 0 0">' + esc(e.desc) + '</div></div>'; }).join('') + '</div>';
+    } else {
+      var sum = lab.summary, bo = sum.overall[0], ins = E.labInsights(lab.cells, sum), tl = lab.timeline;
+      // recommended plan
+      h += '<div class="card c7 plan"><h2>Recommended plan <span class="pill go">best of ' + E.STRATEGIES.length + '</span></h2>' +
+        '<div style="font-size:24px;font-weight:800;margin:4px 0">' + esc(sName(sum.best)) + '</div><div class="sub">' + esc(E.STRATEGIES.filter(function (x) { return x.id === sum.best; })[0].desc) + '</div>' +
+        '<div class="kpis3"><div><b>' + pct(bo.avgP24) + '</b><span>avg chance of ₹1L by m24</span></div><div><b>' + pct(bo.worstP24) + '</b><span>worst case (' + esc(eName(bo.worstEconomy)) + ')</span></div><div><b>' + bo.wins.length + ' of ' + E.ECONOMIES.length + '</b><span>economies won</span></div></div>' +
+        '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Why this one</h3><ul style="margin:4px 0;padding-left:18px">' + ins.why.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+        '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Watch-outs</h3><ul style="margin:4px 0;padding-left:18px">' + ins.watch.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+        '<h3 style="margin:12px 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase">Month by month (typical run, normal economy)</h3><ol>' + tl.steps.map(function (st) { return '<li><b>Month ' + st.month + ':</b> ' + esc(st.text) + '</li>'; }).join('') + '</ol>' +
+        '<div class="actions"><button class="primary" data-l="play" data-s="' + sum.best + '" data-e="normal">▶ Play this plan</button><button data-l="md">Download full report (.md)</button></div></div>';
+      // ranking
+      h += '<div class="card c5"><h2>Strategy ranking</h2><div class="sub">Averaged over all ' + E.ECONOMIES.length + ' economies</div>' +
+        '<div class="rankrow h"><span></span><span>Strategy</span><span>Score</span><span>Avg P(₹1L m24)</span><span>Worst case</span></div>' +
+        sum.overall.map(function (o, i) { return '<div class="rankrow' + (i ? '' : ' top') + '"><span class="n">' + (i + 1) + '</span><span>' + esc(sName(o.strategy)) + '</span><span>' + o.avgScore.toFixed(0) + '</span><span>' + pct(o.avgP24) + '</span><span data-tip="Worst in ' + esc(eName(o.worstEconomy)) + '">' + pct(o.worstP24) + '</span></div>'; }).join('') +
+        '<div class="loopkey" style="margin-top:8px">Score = 100 × P(₹1L by m24) + 30 × P(by m18) − 150 × P(out of credit) + median net at the end ÷ ₹10k − 5 per hour a week over 4.</div></div>';
+      // heatmap
+      h += '<div class="card c12"><h2>Chance of ₹1 lakh a month by month 24 <span class="legendmini"><span><i class="sq" style="background:' + heatColor(0) + ';border:1px solid #CDBFA6"></i>0%</span><span><i class="sq" style="background:' + heatColor(0.5) + '"></i>50%</span><span><i class="sq" style="background:' + heatColor(1) + '"></i>100%</span><span style="outline:2px solid var(--ink);padding:0 4px;border-radius:3px">best in economy</span></span></h2><div class="sub">Hover a cell for the detail. Each cell is ' + lab.cells[0].runs + ' runs over ' + lab.cells[0].months + ' months.</div>' +
+        '<table class="heat"><thead><tr><th></th>' + E.ECONOMIES.map(function (e) { return '<th>' + esc(e.name) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        E.STRATEGIES.map(function (st) {
+          return '<tr><td class="rowh">' + esc(st.name) + '</td>' + E.ECONOMIES.map(function (ec) {
+            var c = lab.cells.filter(function (x) { return x.strategy === st.id && x.economy === ec.id; })[0];
+            if (!c) return '<td>—</td>';
+            var isBest = sum.byEconomy[ec.id][0].strategy === st.id;
+            return '<td class="' + (isBest ? 'best' : '') + '" style="background:' + heatColor(c.pLakhBy24) + ';color:' + (c.pLakhBy24 > 0.5 ? '#fff' : '#14231F') + '" data-tip="' + esc(st.name + ' · ' + ec.name) + '\nP(₹1L by m18) ' + pct(c.pLakhBy18) + ' · by m24 ' + pct(c.pLakhBy24) + '\nMedian net m24 ' + fmt(c.medianNet24) + '\nOut of credit ' + pct(c.pCreditBreached) + '\nScore ' + c.score.toFixed(0) + '">' + pct(c.pLakhBy24) + '</td>';
+          }).join('') + '</tr>';
+        }).join('') + '</tbody></table></div>';
+      // per-economy reports
+      h += '<div class="c12"><h2 style="margin:6px 2px 0;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Scenario reports</h2></div><div class="c12 scgrid">';
+      E.ECONOMIES.forEach(function (ec) {
+        var list = sum.byEconomy[ec.id], top = list[0];
+        var maxNet = Math.max.apply(null, list.map(function (c) { return Math.max(0, c.medianNet24 || 0); }).concat([1]));
+        h += '<div class="card"><h2>' + esc(ec.name) + ' <span class="pill go">best: ' + esc(sName(top.strategy)) + '</span></h2><div class="sub">' + esc(ec.desc) + '</div>' +
+          '<div class="facts"><div class="row2"><span>Best chance of ₹1L by m24</span><span>' + pct(top.pLakhBy24) + '</span></div><div class="row2"><span>Median month to ₹1L</span><span>' + (top.medianMonthToLakh == null ? 'not reached' : 'month ' + Math.round(top.medianMonthToLakh)) + '</span></div>' +
+          '<div class="row2"><span>5th-percentile lowest cash</span><span>' + fmt(top.p5LowestCash) + '</span></div></div>' +
+          '<div class="sub" style="margin:8px 0 2px">Median net profit at month 24, by strategy</div>' +
+          list.map(function (c) {
+            return '<div class="hbar" style="grid-template-columns:130px 1fr 64px 26px" data-tip="' + esc(sName(c.strategy)) + '\nP(₹1L by m24) ' + pct(c.pLakhBy24) + '\nMedian net m12 ' + fmt(c.medianNet12) + ', m24 ' + fmt(c.medianNet24) + ', m' + c.months + ' ' + fmt(c.medianNet36) + '\nHours/week ' + (c.medianHoursAt24 == null ? '—' : c.medianHoursAt24.toFixed(1)) + '"><span>' + esc(sName(c.strategy)) + '</span><span class="tr"><i style="width:' + (Math.max(0, c.medianNet24 || 0) / maxNet * 100).toFixed(1) + '%;background:#2a78d6"></i></span><span>' + compact(c.medianNet24 || 0) + '</span>' +
+              '<button style="padding:0 5px" title="Play this scenario" data-l="play" data-s="' + c.strategy + '" data-e="' + ec.id + '">▶</button></div>';
+          }).join('') + '</div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+    el.innerHTML = h;
+  }
+  function runLab() {
+    if (labRunning) return;
+    labRunning = true;
+    var runs = +$('labRuns').value || 200, months = +$('labMonths').value || 36;
+    var jobs = [];
+    E.STRATEGIES.forEach(function (st) { E.ECONOMIES.forEach(function (ec) { jobs.push([st.id, ec.id]); }); });
+    var cells = [], i = 0, t0 = performance.now();
+    $('labProg').style.display = 'block';
+    $('view-analysis').querySelector('[data-l=run]').disabled = true;
+    (function next() {
+      if (i >= jobs.length) {
+        var summary = E.labSummarize(cells);
+        var rep = cells.filter(function (c) { return c.strategy === summary.best && c.economy === 'normal'; })[0];
+        lab = { cells: cells, summary: summary, timeline: E.labTimeline(summary.best, 'normal', rep.representativeSeed, months), when: new Date().toISOString().slice(0, 10) };
+        lab.timeline.ledger = undefined;
+        try { localStorage.setItem('haspot-sim-lab', JSON.stringify(lab)); } catch (e) { /* ignore */ }
+        labRunning = false; renderLab();
+        return;
+      }
+      var j = jobs[i];
+      $('labProgTxt').textContent = 'Running ' + sName(j[0]) + ' in ' + eName(j[1]) + ' (' + (i + 1) + ' of ' + jobs.length + ')…';
+      cells.push(E.labCell(j[0], j[1], { runs: runs, months: months }));
+      i++;
+      $('labProg').querySelector('i').style.width = (i / jobs.length * 100) + '%';
+      setTimeout(next, 0);
+    })();
+  }
+  $('view-analysis').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-l]'); if (!b) return;
+    var l = b.dataset.l;
+    if (l === 'run') runLab();
+    if (l === 'mc' && S) mcModal(S.presetId || 'P2');
+    if (l === 'compare' && S) compareModal();
+    if (l === 'md' && lab) download('haspot-scenario-report.md', E.labMarkdown(lab.cells, lab.summary, lab.timeline, { date: lab.when }), 'text/markdown');
+    if (l === 'play') {
+      var st = b.dataset.s, ec = b.dataset.e;
+      var cell = lab && lab.cells.filter(function (c) { return c.strategy === st && c.economy === ec; })[0];
+      var g = E.newGame(E.labParams(st, ec), { seed: cell ? cell.representativeSeed : 1 });
+      g.presetId = sName(st) + ' · ' + eName(ec);
+      startGame(g);
+      setTab('dash');
+    }
   });
 
   // ---------- boot ----------
@@ -1935,8 +2740,9 @@ var HaspotEngine = (function () {
   startModal();
   // a game is needed behind the start modal so the map is not blank
   S = E.newGame(E.makeParams({ start: { setup: 'empty' }, growth: { autoExpand: false } }), { seed: 1 });
+  setTab(tab);
   fitView(); renderAll();
-  window.HaspotUI = { get state() { return S; }, tick: function () { doTick(); renderAll(); }, startGame: startGame };
+  window.HaspotUI = { get state() { return S; }, tick: function () { doTick(); renderAll(); }, step: function () { stepMonth(); }, startGame: startGame, setTab: setTab, get tab() { return tab; } };
 })();
 </script>
 </body>

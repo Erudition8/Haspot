@@ -33,6 +33,47 @@ Drag the map to pan and scroll to zoom.
 
 **Toolbar:** Scenarios (presets P0–P8), Config (every parameter, with "Reset to plan"), Ledger & charts (CSV export and import), Monte Carlo, Compare, and Save / Load (the full game as JSON). The game also autosaves in this browser.
 
+## Dashboard, milestones and report cards
+
+The game has three tabs:
+
+- **Dashboard** (the home view): a headline, KPI tiles with month-on-month change and 12-month sparklines, a progress ring toward ₹1 lakh a month, revenue vs expenses by month (hover a month for its numbers), where the money goes, cash and credit with runway, both networks' slots and sizes, a dot for every screen's health, your hours against the 4-hour target, milestones, recent events, and a **Next step** suggestion.
+- **City map**: pitch shops, install screens, and manage the hub and anchors (as before).
+- **Scenario lab**: see below.
+
+There are **14 milestones**, from first host up to ₹1 lakh a month, 42 screens, debt free and 6 months of smooth running. They unlock with a toast and are saved with the game.
+
+A **report card** opens after each single month, and after a run when you pause or jump. It shows a star rating, a cash waterfall (opening cash, top-up, revenue, running costs, screens and other, closing cash), what changed, what happened, any milestones, and a tip for next month. Switch it off with the checkbox in the header.
+
+## Scenario lab: which plan holds up best?
+
+The Scenario lab runs **6 strategies × 5 economies = 30 scenarios**, each as a Monte Carlo batch. It ranks the strategies, writes a report for each economy and recommends a plan, with a month-by-month timeline from a typical run. Use **▶ Play** to start a game with any strategy in any economy.
+
+| Economy | What changes |
+| --- | --- |
+| Normal | The plan's assumptions |
+| Boom | 1.5 new advertisers a month, 3% churn, anchors easier |
+| Recession | 0.6 new advertisers a month, 9% churn, anchors harder to sign and renew |
+| Cost inflation | Kit +20%, host fee ₹600, data ₹250, fixed ₹7,000 |
+| Tight money | ₹50,000 credit at 3% a month, ₹25,000 top-up |
+
+| Strategy | What it does |
+| --- | --- |
+| Monthly slots (the plan) | All 10 slots sold month to month at ₹500 |
+| Anchor-led | 5 slots per network leased to institutions at ₹450 |
+| Light anchors | 2 anchor slots per network (1 per client), 8 monthly |
+| Premium price ₹600 | Higher list price, fewer sign-ups |
+| Value price ₹400 | Lower list price, more sign-ups |
+| Lean infra | Shop Wi-Fi and a self-hosted signage server from month 13 |
+
+To write the full report from the command line:
+
+```
+node tools/scenario-report.mjs 300 36   # runs per scenario, months
+```
+
+This writes `reports/scenario-report.md` and `reports/scenario-results.json`. The committed report (300 runs each) recommends **Light anchors**. It has an 89% average chance of ₹1 lakh a month by month 24 across the five economies, and 50% in a recession against 21% for the plan's all-monthly model. It reaches ₹1 lakh about 2 months sooner in a normal economy. Premium ₹600 earns the most once both networks are full, so the plan suggests testing it later. These results rest on assumptions about anchor pitch success and renewal rates, so confirm those on the first trip.
+
 ## Run the tests
 
 ```
@@ -94,7 +135,7 @@ Then re-run P2, P3 and P4 in Monte Carlo. Buy the next 10 screens only if P2 giv
 
 ## QA checklist (plan section 12)
 
-- [x] All fixtures in section 9 pass from a clean checkout (`node test/engine.test.mjs`: 32 passing)
+- [x] All fixtures in section 9 pass from a clean checkout (`node test/engine.test.mjs`: 34 passing)
 - [ ] Works offline in current Chrome, Firefox and Safari. Tested in headless Chromium only; the code is plain ES5 with standard DOM APIs.
 - [x] No network requests at all (checked with Playwright's request log)
 - [x] Real-time speed advances one month per 60 s. A month ticks when accumulated frame time reaches 60,000 ms; time does not count while the tab is hidden.

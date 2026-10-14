@@ -199,6 +199,24 @@ test('classic preset: flat ₹7,000 revenue and ₹5,000 expense per screen', ()
 test('Pi player costs ₹7,091 more', () => {
   assert.equal(E.kitCost(Pe, 'pi') - E.kitCost(Pe, 'androidTV'), 7091);
 });
+test('scenario lab: every strategy × economy runs, ranks and explains', () => {
+  const cells = [];
+  for (const st of E.STRATEGIES) for (const ec of E.ECONOMIES) cells.push(E.labCell(st.id, ec.id, { runs: 20, months: 24 }));
+  assert.equal(cells.length, E.STRATEGIES.length * E.ECONOMIES.length);
+  const sum = E.labSummarize(cells);
+  assert.ok(E.STRATEGIES.some(s => s.id === sum.best));
+  assert.equal(sum.overall.length, E.STRATEGIES.length);
+  for (const ec of E.ECONOMIES) assert.equal(sum.byEconomy[ec.id].length, E.STRATEGIES.length);
+  const tl = E.labTimeline(sum.best, 'normal', 1, 24);
+  assert.ok(tl.steps.length > 0);
+  const md = E.labMarkdown(cells, sum, tl, {});
+  for (const ec of E.ECONOMIES) assert.ok(md.includes('Scenario report: ' + ec.name));
+  assert.ok(md.includes('Recommended plan'));
+});
+test('scenario lab: monthly strategy in a normal economy is the Base preset', () => {
+  const a = E.monteCarlo(E.labParams('monthly', 'normal'), { runs: 30 }), b = E.monteCarlo(E.presetParams('P2'), { runs: 30 });
+  assert.equal(a.pLakhBy24, b.pLakhBy24);
+});
 test('calendar: month 7 is Apr 2027', () => assert.equal(E.calendarLabel(P, 7), 'Apr 2027'));
 
 // ---------- run ----------
